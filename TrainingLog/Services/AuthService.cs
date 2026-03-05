@@ -6,7 +6,8 @@ public class AuthService(AppDbContext db) : IAuthService
 {
     public string? Authenticate(string username, string password)
     {
-        var user = db.Users.FirstOrDefault(u => u.Username == username && u.Password == password);
-        return user?.Role;
+        var user = db.Users.FirstOrDefault(u => u.Username == username);
+        if (user is null) return null;
+        return BCrypt.Net.BCrypt.Verify(password, user.Password) ? user.Role : null;
     }
 }

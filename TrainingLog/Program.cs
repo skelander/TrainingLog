@@ -48,11 +48,12 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
     if (!db.Users.Any())
     {
+        static string Hash(string pw) => BCrypt.Net.BCrypt.HashPassword(pw);
         db.Users.AddRange(
-            new User { Username = "alice", Password = "alice", Role = "user" },
-            new User { Username = "bob",   Password = "bob",   Role = "user" },
-            new User { Username = "admin", Password = "admin", Role = "admin" },
-            new User { Username = "1",     Password = "1",     Role = "user" }
+            new User { Username = "alice", Password = Hash("alice"), Role = "user" },
+            new User { Username = "bob",   Password = Hash("bob"),   Role = "user" },
+            new User { Username = "admin", Password = Hash("admin"), Role = "admin" },
+            new User { Username = "1",     Password = Hash("1"),     Role = "user" }
         );
         db.WorkoutTypes.AddRange(
             new WorkoutType
