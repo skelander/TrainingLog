@@ -139,18 +139,29 @@ function renderWorkoutTypes() {
       <td>${t.name}</td>
       <td>${fields || '—'}</td>
       <td class="td-actions">${currentRole === 'admin' ? `
-        <button class="small secondary" onclick="editType(${t.id})">Edit</button>
-        <button class="small danger" onclick="deleteType(${t.id})">Delete</button>
+        <button class="small secondary" data-action="edit" data-id="${t.id}">Edit</button>
+        <button class="small danger" data-action="delete" data-id="${t.id}">Delete</button>
       ` : ''}</td>
     `;
     tbody.appendChild(tr);
   }
 }
 
+document.querySelector('#types-table tbody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = parseInt(btn.dataset.id);
+  if (btn.dataset.action === 'edit') editType(id);
+  if (btn.dataset.action === 'delete') deleteType(id);
+});
+
 // ── Type form ─────────────────────────────────────────────
 
 document.getElementById('add-field-btn').addEventListener('click', () => addFieldRow());
 document.getElementById('type-cancel-btn').addEventListener('click', resetTypeForm);
+fieldsContainer.addEventListener('click', e => {
+  if (e.target.closest('.remove-field-btn')) e.target.closest('.field-row').remove();
+});
 
 function addFieldRow(name = '', type = 0, unit = '') {
   const row = document.createElement('div');
@@ -163,7 +174,7 @@ function addFieldRow(name = '', type = 0, unit = '') {
       <option value="2"${type === 2 ? ' selected' : ''}>Duration</option>
     </select>
     <input type="text" class="field-unit" placeholder="Unit" value="${unit ?? ''}">
-    <button type="button" class="small secondary" onclick="this.parentElement.remove()">✕</button>
+    <button type="button" class="small secondary remove-field-btn">✕</button>
   `;
   fieldsContainer.appendChild(row);
 }
@@ -261,17 +272,19 @@ function renderSessions(sessions) {
       <td>${s.workoutTypeName}</td>
       <td>${values || '—'}</td>
       <td>${s.notes || '—'}</td>
-      <td class="td-actions"><button class="small danger" onclick="deleteSession(${s.id})">Delete</button></td>
+      <td class="td-actions"><button class="small danger" data-action="delete" data-id="${s.id}">Delete</button></td>
     `;
     tbody.appendChild(tr);
   }
 }
 
-async function deleteSession(id) {
+document.querySelector('#sessions-table tbody').addEventListener('click', async e => {
+  const btn = e.target.closest('button[data-action="delete"]');
+  if (!btn) return;
   if (!confirm('Delete this session?')) return;
-  const res = await api(`/workouts/${id}`, { method: 'DELETE' });
+  const res = await api(`/workouts/${parseInt(btn.dataset.id)}`, { method: 'DELETE' });
   if (res?.ok) await loadSessions();
-}
+})
 
 function populateSessionTypeSelect() {
   const sel = document.getElementById('session-type');
