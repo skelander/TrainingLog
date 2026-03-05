@@ -90,10 +90,14 @@ async function showApp() {
   appSection.hidden = false;
   userInfo.textContent = `${currentUser} (${currentRole})`;
   typeFormSection.hidden = currentRole !== 'admin';
-  setSessionDateDefault();
+  const sessionsSection = document.getElementById('sessions-section');
+  sessionsSection.hidden = currentRole === 'admin';
   await loadWorkoutTypes();
-  populateSessionTypeSelect();
-  await loadSessions();
+  if (currentRole !== 'admin') {
+    setSessionDateDefault();
+    populateSessionTypeSelect();
+    await loadSessions();
+  }
 }
 
 // ── Workout Types ─────────────────────────────────────────
