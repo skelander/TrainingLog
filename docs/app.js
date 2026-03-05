@@ -130,19 +130,34 @@ function renderWorkoutTypes() {
   }
 
   for (const t of workoutTypes) {
-    const fields = t.fields
+    const fieldText = t.fields
       .map(f => `${f.name} (${FIELD_TYPES[f.type] ?? f.type}${f.unit ? ', ' + f.unit : ''})`)
       .join(', ');
 
+    const tdName = document.createElement('td');
+    tdName.textContent = t.name;
+
+    const tdFields = document.createElement('td');
+    tdFields.textContent = fieldText || '—';
+
+    const tdActions = document.createElement('td');
+    tdActions.className = 'td-actions';
+    if (currentRole === 'admin') {
+      const editBtn = document.createElement('button');
+      editBtn.className = 'small secondary';
+      editBtn.dataset.action = 'edit';
+      editBtn.dataset.id = t.id;
+      editBtn.textContent = 'Edit';
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'small danger';
+      deleteBtn.dataset.action = 'delete';
+      deleteBtn.dataset.id = t.id;
+      deleteBtn.textContent = 'Delete';
+      tdActions.append(editBtn, deleteBtn);
+    }
+
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${t.name}</td>
-      <td>${fields || '—'}</td>
-      <td class="td-actions">${currentRole === 'admin' ? `
-        <button class="small secondary" data-action="edit" data-id="${t.id}">Edit</button>
-        <button class="small danger" data-action="delete" data-id="${t.id}">Delete</button>
-      ` : ''}</td>
-    `;
+    tr.append(tdName, tdFields, tdActions);
     tbody.appendChild(tr);
   }
 }
@@ -167,15 +182,18 @@ function addFieldRow(name = '', type = 0, unit = '') {
   const row = document.createElement('div');
   row.className = 'field-row';
   row.innerHTML = `
-    <input type="text" class="field-name" placeholder="Field name" value="${name}" required>
+    <input type="text" class="field-name" placeholder="Field name" required>
     <select class="field-type">
-      <option value="0"${type === 0 ? ' selected' : ''}>Number</option>
-      <option value="1"${type === 1 ? ' selected' : ''}>Text</option>
-      <option value="2"${type === 2 ? ' selected' : ''}>Duration</option>
+      <option value="0">Number</option>
+      <option value="1">Text</option>
+      <option value="2">Duration</option>
     </select>
-    <input type="text" class="field-unit" placeholder="Unit" value="${unit ?? ''}">
+    <input type="text" class="field-unit" placeholder="Unit">
     <button type="button" class="small secondary remove-field-btn">✕</button>
   `;
+  row.querySelector('.field-name').value = name;
+  row.querySelector('.field-type').value = type;
+  row.querySelector('.field-unit').value = unit ?? '';
   fieldsContainer.appendChild(row);
 }
 
@@ -264,16 +282,31 @@ function renderSessions(sessions) {
     return;
   }
   for (const s of sessions) {
-    const date = new Date(s.loggedAt).toLocaleString();
-    const values = s.values.map(v => `${v.fieldDefinitionName}: ${v.value}`).join(', ');
+    const valueText = s.values.map(v => `${v.fieldDefinitionName}: ${v.value}`).join(', ');
+
+    const tdDate = document.createElement('td');
+    tdDate.textContent = new Date(s.loggedAt).toLocaleString();
+
+    const tdType = document.createElement('td');
+    tdType.textContent = s.workoutTypeName;
+
+    const tdValues = document.createElement('td');
+    tdValues.textContent = valueText || '—';
+
+    const tdNotes = document.createElement('td');
+    tdNotes.textContent = s.notes || '—';
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'small danger';
+    deleteBtn.dataset.action = 'delete';
+    deleteBtn.dataset.id = s.id;
+    deleteBtn.textContent = 'Delete';
+    const tdActions = document.createElement('td');
+    tdActions.className = 'td-actions';
+    tdActions.appendChild(deleteBtn);
+
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${date}</td>
-      <td>${s.workoutTypeName}</td>
-      <td>${values || '—'}</td>
-      <td>${s.notes || '—'}</td>
-      <td class="td-actions"><button class="small danger" data-action="delete" data-id="${s.id}">Delete</button></td>
-    `;
+    tr.append(tdDate, tdType, tdValues, tdNotes, tdActions);
     tbody.appendChild(tr);
   }
 }
