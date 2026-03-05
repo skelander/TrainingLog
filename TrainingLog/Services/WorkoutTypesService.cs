@@ -6,13 +6,16 @@ namespace TrainingLog.Services;
 
 public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
 {
-    public List<WorkoutType> GetAll() =>
-        db.WorkoutTypes.Include(w => w.Fields).ToList();
+    public List<WorkoutTypeResponse> GetAll() =>
+        db.WorkoutTypes.Include(w => w.Fields).ToList().Select(ToResponse).ToList();
 
-    public WorkoutType? GetById(int id) =>
-        db.WorkoutTypes.Include(w => w.Fields).FirstOrDefault(w => w.Id == id);
+    public WorkoutTypeResponse? GetById(int id)
+    {
+        var type = db.WorkoutTypes.Include(w => w.Fields).FirstOrDefault(w => w.Id == id);
+        return type is null ? null : ToResponse(type);
+    }
 
-    public WorkoutType Create(string name, List<FieldDefinitionRequest> fields)
+    public WorkoutTypeResponse Create(string name, List<FieldDefinitionRequest> fields)
     {
         var type = new WorkoutType
         {
@@ -21,10 +24,10 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
         };
         db.WorkoutTypes.Add(type);
         db.SaveChanges();
-        return type;
+        return ToResponse(type);
     }
 
-    public WorkoutType? Update(int id, string name, List<FieldDefinitionRequest> fields)
+    public WorkoutTypeResponse? Update(int id, string name, List<FieldDefinitionRequest> fields)
     {
         var type = db.WorkoutTypes.Include(w => w.Fields).FirstOrDefault(w => w.Id == id);
         if (type is null) return null;
@@ -33,7 +36,7 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
         db.FieldDefinitions.RemoveRange(type.Fields);
         type.Fields = fields.Select(f => new FieldDefinition { Name = f.Name, Type = f.Type, Unit = f.Unit, WorkoutTypeId = id }).ToList();
         db.SaveChanges();
-        return type;
+        return ToResponse(type);
     }
 
     public bool Delete(int id)
@@ -44,4 +47,7 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
         db.SaveChanges();
         return true;
     }
+
+    private static WorkoutTypeResponse ToResponse(WorkoutType t) =>
+        new(t.Id, t.Name, t.Fields.Select(f => new FieldDefResponse(f.Id, f.Name, f.Type, f.Unit)).ToList());
 }

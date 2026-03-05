@@ -6,21 +6,26 @@ namespace TrainingLog.Services;
 
 public class WorkoutsService(AppDbContext db) : IWorkoutsService
 {
-    public List<WorkoutSession> GetForUser(string username) =>
+    public List<WorkoutSessionResponse> GetForUser(string username) =>
         db.WorkoutSessions
-            .Include(s => s.WorkoutType).ThenInclude(t => t!.Fields)
+            .Include(s => s.WorkoutType)
             .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
             .Where(s => s.Username == username)
             .OrderByDescending(s => s.LoggedAt)
+            .ToList()
+            .Select(ToResponse)
             .ToList();
 
-    public WorkoutSession? GetById(int id) =>
-        db.WorkoutSessions
-            .Include(s => s.WorkoutType).ThenInclude(t => t!.Fields)
+    public WorkoutSessionResponse? GetById(int id)
+    {
+        var session = db.WorkoutSessions
+            .Include(s => s.WorkoutType)
             .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
             .FirstOrDefault(s => s.Id == id);
+        return session is null ? null : ToResponse(session);
+    }
 
-    public WorkoutSession? Create(string username, int workoutTypeId, DateTime loggedAt, string? notes, List<FieldValueRequest> values)
+    public WorkoutSessionResponse? Create(string username, int workoutTypeId, DateTime loggedAt, string? notes, List<FieldValueRequest> values)
     {
         if (!db.WorkoutTypes.Any(t => t.Id == workoutTypeId)) return null;
 
@@ -46,4 +51,17 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         db.SaveChanges();
         return true;
     }
+
+    private static WorkoutSessionResponse ToResponse(WorkoutSession s) =>
+        new(s.Id,
+            s.Username,
+            s.WorkoutTypeId,
+            s.WorkoutType?.Name ?? string.Empty,
+            s.LoggedAt,
+            s.Notes,
+            s.Values.Select(v => new FieldValueResponse(
+                v.Id,
+                v.FieldDefinitionId,
+                v.FieldDefinition?.Name ?? string.Empty,
+                v.Value)).ToList());
 }
