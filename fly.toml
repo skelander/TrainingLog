@@ -1,5 +1,4 @@
-[app]
-name = "traininglog-rikard"
+app = "traininglog-rikard"
 primary_region = "arn"
 
 [build]
