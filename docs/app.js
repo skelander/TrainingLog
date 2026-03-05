@@ -321,13 +321,11 @@ document.querySelector('#sessions-table tbody').addEventListener('click', async 
 
 function populateSessionTypeSelect() {
   const sel = document.getElementById('session-type');
-  const current = sel.value;
   sel.innerHTML = '<option value="">— Select type —</option>';
   for (const t of workoutTypes) {
     const opt = document.createElement('option');
     opt.value = t.id;
     opt.textContent = t.name;
-    if (String(t.id) === current) opt.selected = true;
     sel.appendChild(opt);
   }
 }
