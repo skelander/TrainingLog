@@ -133,7 +133,10 @@ public class WorkoutTypesControllerTests : IClassFixture<WebApplicationFactory<P
     public async Task Update_AsUser_Returns403()
     {
         var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
-        var res = await _client.WithToken(token).PutAsJsonAsync("/workout-types/1", new
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var first = types!.First();
+
+        var res = await _client.WithToken(token).PutAsJsonAsync($"/workout-types/{first.Id}", new
         {
             Name = "Hacked",
             Fields = Array.Empty<object>()
