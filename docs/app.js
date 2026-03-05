@@ -29,7 +29,6 @@ async function api(path, options = {}) {
       ...(options.headers ?? {}),
     },
   });
-  if (res.status === 401) { logout(); return null; }
   return res;
 }
 
@@ -97,8 +96,19 @@ async function showApp() {
 // ── Workout Types ─────────────────────────────────────────
 
 async function loadWorkoutTypes() {
-  const res = await api('/workout-types');
-  if (!res?.ok) return;
+  const tbody = document.querySelector('#types-table tbody');
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Loading…</td></tr>';
+  let res;
+  try {
+    res = await api('/workout-types');
+  } catch {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Could not reach server.</td></tr>';
+    return;
+  }
+  if (!res.ok) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="3">Error ${res.status} loading types.</td></tr>`;
+    return;
+  }
   workoutTypes = await res.json();
   renderWorkoutTypes();
 }
