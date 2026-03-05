@@ -38,16 +38,30 @@ async function api(path, options = {}) {
 document.getElementById('login-form').addEventListener('submit', async e => {
   e.preventDefault();
   const err = document.getElementById('login-error');
+  const btn = e.target.querySelector('button[type="submit"]');
   err.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Logging in…';
 
-  const res = await fetch(API + '/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      username: document.getElementById('username').value,
-      password: document.getElementById('password').value,
-    }),
-  });
+  let res;
+  try {
+    res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+      }),
+    });
+  } catch {
+    err.textContent = 'Could not reach the server.';
+    btn.disabled = false;
+    btn.textContent = 'Log in';
+    return;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Log in';
+  }
 
   if (!res.ok) { err.textContent = 'Invalid credentials.'; return; }
 
