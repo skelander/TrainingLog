@@ -106,5 +106,26 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
     }
 
+    [Fact]
+    public async Task Delete_AdminCanDeleteAnySession_ReturnsNoContent()
+    {
+        var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
+
+        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", RunningSession());
+        var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
+
+        var res = await _client.WithToken(adminToken).DeleteAsync($"/workouts/{session!.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetById_NonExistent_Returns404()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var res = await _client.WithToken(token).GetAsync("/workouts/99999");
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
+
     private record WorkoutSessionResponse(int Id, string Username);
 }
