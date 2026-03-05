@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrainingLog Admin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="login-section">
+    <div class="card">
+      <h1>TrainingLog</h1>
+      <form id="login-form">
+        <input type="text" id="username" placeholder="Username" autocomplete="username" required>
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+        <button type="submit">Log in</button>
+        <p id="login-error" class="error"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-section" hidden>
+    <header>
+      <h1>TrainingLog</h1>
+      <div class="header-right">
+        <span id="user-info"></span>
+        <button id="logout-btn" class="secondary">Log out</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Workout Types</h2>
+
+        <table id="types-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Fields</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div id="type-form-section" hidden>
+          <h3 id="type-form-title">New Workout Type</h3>
+          <form id="type-form">
+            <input type="text" id="type-name" placeholder="Type name" required>
+            <div id="fields-container"></div>
+            <button type="button" id="add-field-btn" class="secondary">+ Add field</button>
+            <div class="form-actions">
+              <button type="submit" id="type-submit-btn">Create</button>
+              <button type="button" id="type-cancel-btn" class="secondary" hidden>Cancel</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

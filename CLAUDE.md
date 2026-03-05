@@ -8,7 +8,7 @@ ASP.NET Core REST API for tracking workouts. Admins define workout types and the
 - JWT Bearer authentication (HMAC-SHA256, 8-hour expiry)
 - xUnit + `WebApplicationFactory` for integration tests
 - Docker + Fly.io (API)
-- GitHub Pages (frontend, coming later)
+- GitHub Pages (frontend)
 - GitHub Actions (CI/CD)
 
 ## Project Structure
@@ -62,6 +62,13 @@ dotnet test TrainingLog.Tests/TrainingLog.Tests.csproj
 
 ## dotnet path
 `C:\Program Files\dotnet\dotnet.exe` (not on PATH in bash — use PowerShell)
+
+## Frontend (GitHub Pages)
+- URL: https://skelander.github.io/TrainingLog/
+- Source: `docs/` folder on main branch
+- Entry: `docs/index.html` — pure HTML/CSS/JS, no build step
+- Deployed via `.github/workflows/pages.yml`
+- **Setup**: repo Settings → Pages → Source → GitHub Actions (one-time manual step)
 
 ## Workflow
 - Deploy directly to main; hide in-progress features behind toggles if needed
