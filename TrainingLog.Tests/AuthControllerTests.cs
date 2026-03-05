@@ -1,15 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace TrainingLog.Tests;
 
-public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
+public class AuthControllerTests : IClassFixture<TrainingLogFactory>
 {
     private readonly HttpClient _client;
 
-    public AuthControllerTests(WebApplicationFactory<Program> factory)
+    public AuthControllerTests(TrainingLogFactory factory)
     {
         _client = factory.CreateClient();
     }

@@ -3,6 +3,13 @@ primary_region = "arn"
 
 [build]
 
+[env]
+  ConnectionStrings__DefaultConnection = "Data Source=/data/traininglog.db"
+
+[[mounts]]
+  source = "traininglog_data"
+  destination = "/data"
+
 [http_service]
   internal_port = 8080
   force_https = true

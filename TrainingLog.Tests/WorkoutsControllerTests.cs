@@ -1,15 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace TrainingLog.Tests;
 
-public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Program>>
+public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>
 {
     private readonly HttpClient _client;
 
-    public WorkoutsControllerTests(WebApplicationFactory<Program> factory)
+    public WorkoutsControllerTests(TrainingLogFactory factory)
     {
         _client = factory.CreateClient();
     }
