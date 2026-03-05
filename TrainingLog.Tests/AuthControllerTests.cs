@@ -24,7 +24,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.NotNull(body);
         Assert.Equal("admin", body.User);
         Assert.Equal("admin", body.Role);
-        Assert.False(string.IsNullOrEmpty(body.Token));
+        Assert.NotEmpty(body.Token);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
         var body = await res.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(body);
         Assert.Equal("user", body.Role);
-        Assert.False(string.IsNullOrEmpty(body.Token));
+        Assert.NotEmpty(body.Token);
     }
 
     [Theory]
