@@ -96,6 +96,8 @@ form {
 
 input[type="text"],
 input[type="password"],
+input[type="number"],
+input[type="datetime-local"],
 select {
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
@@ -227,6 +229,37 @@ tr:last-child td { border-bottom: none; }
   display: flex;
   gap: 0.5rem;
   margin-top: 0.25rem;
+}
+
+/* ── Session form section ── */
+
+#session-form-section {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+}
+
+#session-form-section h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  color: #374151;
+}
+
+.session-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.session-field-label span {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* ── Card spacing ── */
+
+main section + section {
+  margin-top: 1.5rem;
 }
 
 /* ── Error ── */

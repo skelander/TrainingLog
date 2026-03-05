@@ -90,7 +90,10 @@ async function showApp() {
   appSection.hidden = false;
   userInfo.textContent = `${currentUser} (${currentRole})`;
   typeFormSection.hidden = currentRole !== 'admin';
+  setSessionDateDefault();
   await loadWorkoutTypes();
+  populateSessionTypeSelect();
+  await loadSessions();
 }
 
 // ── Workout Types ─────────────────────────────────────────
@@ -212,6 +215,116 @@ async function deleteType(id) {
     if (editingTypeId === id) resetTypeForm();
     await loadWorkoutTypes();
   }
+}
+
+// ── Sessions ──────────────────────────────────────────────
+
+async function loadSessions() {
+  const tbody = document.querySelector('#sessions-table tbody');
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Loading…</td></tr>';
+  let res;
+  try {
+    res = await api('/workouts');
+  } catch {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Could not reach server.</td></tr>';
+    return;
+  }
+  if (!res.ok) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Error ${res.status}.</td></tr>`;
+    return;
+  }
+  renderSessions(await res.json());
+}
+
+function renderSessions(sessions) {
+  const tbody = document.querySelector('#sessions-table tbody');
+  tbody.innerHTML = '';
+  if (!sessions.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No sessions yet.</td></tr>';
+    return;
+  }
+  for (const s of sessions) {
+    const date = new Date(s.loggedAt).toLocaleString();
+    const values = s.values.map(v => `${v.fieldDefinitionName}: ${v.value}`).join(', ');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${date}</td>
+      <td>${s.workoutTypeName}</td>
+      <td>${values || '—'}</td>
+      <td>${s.notes || '—'}</td>
+      <td class="td-actions"><button class="small danger" onclick="deleteSession(${s.id})">Delete</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+async function deleteSession(id) {
+  if (!confirm('Delete this session?')) return;
+  const res = await api(`/workouts/${id}`, { method: 'DELETE' });
+  if (res?.ok) await loadSessions();
+}
+
+function populateSessionTypeSelect() {
+  const sel = document.getElementById('session-type');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select type —</option>';
+  for (const t of workoutTypes) {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.name;
+    if (String(t.id) === current) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+document.getElementById('session-type').addEventListener('change', function () {
+  const typeId = parseInt(this.value);
+  const container = document.getElementById('session-fields');
+  container.innerHTML = '';
+  if (!typeId) return;
+  const type = workoutTypes.find(t => t.id === typeId);
+  if (!type) return;
+  for (const f of type.fields) {
+    const label = document.createElement('label');
+    label.className = 'session-field-label';
+    const span = document.createElement('span');
+    span.textContent = f.unit ? `${f.name} (${f.unit})` : f.name;
+    const input = document.createElement('input');
+    input.type = f.type === 0 ? 'number' : 'text';
+    input.className = 'session-field-value';
+    input.dataset.fieldId = f.id;
+    input.placeholder = FIELD_TYPES[f.type] ?? 'Value';
+    label.appendChild(span);
+    label.appendChild(input);
+    container.appendChild(label);
+  }
+});
+
+document.getElementById('session-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const typeId = parseInt(document.getElementById('session-type').value);
+  const loggedAt = document.getElementById('session-date').value;
+  const notes = document.getElementById('session-notes').value.trim() || null;
+  const values = [...document.querySelectorAll('.session-field-value')].map(inp => ({
+    fieldDefinitionId: parseInt(inp.dataset.fieldId),
+    value: inp.value,
+  }));
+  const res = await api('/workouts', {
+    method: 'POST',
+    body: JSON.stringify({ workoutTypeId: typeId, loggedAt, notes, values }),
+  });
+  if (res?.ok) {
+    e.target.reset();
+    document.getElementById('session-fields').innerHTML = '';
+    setSessionDateDefault();
+    await loadSessions();
+  }
+});
+
+function setSessionDateDefault() {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  document.getElementById('session-date').value = now.toISOString().slice(0, 16);
 }
 
 // ── Init ──────────────────────────────────────────────────

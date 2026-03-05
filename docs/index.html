@@ -57,6 +57,35 @@
           </form>
         </div>
       </section>
+      <section class="card">
+        <h2>My Sessions</h2>
+
+        <table id="sessions-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Values</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div id="session-form-section">
+          <h3>Log Session</h3>
+          <form id="session-form">
+            <input type="datetime-local" id="session-date" required>
+            <select id="session-type" required>
+              <option value="">— Select type —</option>
+            </select>
+            <div id="session-fields"></div>
+            <input type="text" id="session-notes" placeholder="Notes (optional)">
+            <button type="submit">Log session</button>
+          </form>
+        </div>
+      </section>
     </main>
   </div>
 
