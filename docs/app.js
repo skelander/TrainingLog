@@ -42,15 +42,8 @@ document.getElementById('login-form').addEventListener('submit', async e => {
   btn.disabled = true;
   btn.textContent = 'Logging in…';
 
-  const status = document.getElementById('login-status');
-  const log = document.getElementById('debug-log');
-  const setStatus = msg => { status.textContent = msg; };
-  const addLog = msg => { log.textContent += new Date().toISOString().slice(11,23) + ' ' + msg + '\n'; };
-
   try {
     let res;
-    setStatus('Step 1: sending request…');
-    addLog('Fetching POST /auth/login');
     try {
       res = await fetch(API + '/auth/login', {
         method: 'POST',
@@ -61,33 +54,22 @@ document.getElementById('login-form').addEventListener('submit', async e => {
         }),
       });
     } catch (fetchErr) {
-      addLog('FETCH ERROR: ' + fetchErr.message);
       err.textContent = `Could not reach the server: ${fetchErr.message}`;
-      setStatus('');
       return;
     }
 
-    addLog('Login response: ' + res.status);
-    setStatus(`Step 2: server replied ${res.status}`);
-    if (!res.ok) { err.textContent = 'Invalid credentials.'; setStatus(''); return; }
+    if (!res.ok) { err.textContent = 'Invalid credentials.'; return; }
 
     const data = await res.json();
-    addLog('Token received, user=' + data.user + ' role=' + data.role);
     token = data.token;
     currentUser = data.user;
     currentRole = data.role;
     localStorage.setItem('tl_token', token);
     localStorage.setItem('tl_user', currentUser);
     localStorage.setItem('tl_role', currentRole);
-    setStatus('Step 3: showing app…');
-    addLog('Calling showApp()');
     await showApp();
-    addLog('showApp() done');
-    setStatus('');
   } catch (unexpected) {
-    addLog('UNEXPECTED ERROR: ' + unexpected.message);
     err.textContent = `Error: ${unexpected.message}`;
-    setStatus('');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Log in';
