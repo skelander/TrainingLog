@@ -42,8 +42,12 @@ document.getElementById('login-form').addEventListener('submit', async e => {
   btn.disabled = true;
   btn.textContent = 'Logging in…';
 
+  const status = document.getElementById('login-status');
+  const setStatus = msg => { status.textContent = msg; };
+
   try {
     let res;
+    setStatus('Step 1: sending request…');
     try {
       res = await fetch(API + '/auth/login', {
         method: 'POST',
@@ -55,10 +59,12 @@ document.getElementById('login-form').addEventListener('submit', async e => {
       });
     } catch (fetchErr) {
       err.textContent = `Could not reach the server: ${fetchErr.message}`;
+      setStatus('');
       return;
     }
 
-    if (!res.ok) { err.textContent = 'Invalid credentials.'; return; }
+    setStatus(`Step 2: server replied ${res.status}`);
+    if (!res.ok) { err.textContent = 'Invalid credentials.'; setStatus(''); return; }
 
     const data = await res.json();
     token = data.token;
@@ -67,9 +73,12 @@ document.getElementById('login-form').addEventListener('submit', async e => {
     localStorage.setItem('tl_token', token);
     localStorage.setItem('tl_user', currentUser);
     localStorage.setItem('tl_role', currentRole);
+    setStatus('Step 3: showing app…');
     await showApp();
+    setStatus('');
   } catch (unexpected) {
     err.textContent = `Error: ${unexpected.message}`;
+    setStatus('');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Log in';
