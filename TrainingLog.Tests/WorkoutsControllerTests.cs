@@ -14,13 +14,23 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
         _client = factory.CreateClient();
     }
 
-    private object RunningSession(int workoutTypeId = 1) => new
+    private async Task<object> RunningSessionAsync(HttpClient client, string token, int? overrideTypeId = null)
     {
-        WorkoutTypeId = workoutTypeId,
-        LoggedAt = DateTime.UtcNow,
-        Notes = (string?)null,
-        Values = new[] { new { FieldDefinitionId = 1, Value = "5" } }
-    };
+        var types = await client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var running = types!.First(t => t.Name == "Running");
+        var typeId = overrideTypeId ?? running.Id;
+        var fieldId = running.Fields.First().Id;
+        return new
+        {
+            WorkoutTypeId = typeId,
+            LoggedAt = DateTime.UtcNow,
+            Notes = (string?)null,
+            Values = new[] { new { FieldDefinitionId = fieldId, Value = "5" } }
+        };
+    }
+
+    private record WorkoutTypeResponse(int Id, string Name, List<FieldResponse> Fields);
+    private record FieldResponse(int Id, string Name);
 
     [Fact]
     public async Task GetMine_WithoutToken_Returns401()
@@ -41,7 +51,7 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
     public async Task Create_ValidSession_ReturnsCreated()
     {
         var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
-        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", RunningSession());
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, token));
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
     }
 
@@ -49,7 +59,7 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
     public async Task Create_InvalidWorkoutType_Returns400()
     {
         var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
-        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", RunningSession(workoutTypeId: 99999));
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, token, overrideTypeId: 99999));
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
 
@@ -57,7 +67,7 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
     public async Task Create_ThenGetMine_ContainsNewSession()
     {
         var token = await Helpers.GetTokenAsync(_client, "bob", "bob");
-        await _client.WithToken(token).PostAsJsonAsync("/workouts", RunningSession());
+        await _client.WithToken(token).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, token));
 
         var sessions = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutSessionResponse>>("/workouts");
         Assert.NotNull(sessions);
@@ -70,7 +80,7 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
         var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
         var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
 
-        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", RunningSession());
+        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, aliceToken));
         var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
 
         var res = await _client.WithToken(adminToken).GetAsync($"/workouts/{session!.Id}");
@@ -86,7 +96,7 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
     public async Task Delete_OwnSession_ReturnsNoContent()
     {
         var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
-        var created = await _client.WithToken(token).PostAsJsonAsync("/workouts", RunningSession());
+        var created = await _client.WithToken(token).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, token));
         var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
 
         var del = await _client.WithToken(token).DeleteAsync($"/workouts/{session!.Id}");
@@ -99,7 +109,7 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
         var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
         var bobToken = await Helpers.GetTokenAsync(_client, "bob", "bob");
 
-        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", RunningSession());
+        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, aliceToken));
         var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
 
         var res = await _client.WithToken(bobToken).DeleteAsync($"/workouts/{session!.Id}");
@@ -112,7 +122,7 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
         var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
         var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
 
-        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", RunningSession());
+        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, aliceToken));
         var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
 
         var res = await _client.WithToken(adminToken).DeleteAsync($"/workouts/{session!.Id}");
