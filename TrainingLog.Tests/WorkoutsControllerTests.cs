@@ -75,7 +75,7 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
-    public async Task GetById_OtherUsersSession_Returns403()
+    public async Task GetById_AdminCanSeeAnySession_ReturnsOk()
     {
         var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
         var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
@@ -84,12 +84,20 @@ public class WorkoutsControllerTests : IClassFixture<WebApplicationFactory<Progr
         var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
 
         var res = await _client.WithToken(adminToken).GetAsync($"/workouts/{session!.Id}");
-        // Admin can see any session
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+    }
 
+    [Fact]
+    public async Task GetById_OtherUsersSession_Returns403()
+    {
+        var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
         var bobToken = await Helpers.GetTokenAsync(_client, "bob", "bob");
-        var bobRes = await _client.WithToken(bobToken).GetAsync($"/workouts/{session.Id}");
-        Assert.Equal(HttpStatusCode.Forbidden, bobRes.StatusCode);
+
+        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, aliceToken));
+        var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
+
+        var res = await _client.WithToken(bobToken).GetAsync($"/workouts/{session!.Id}");
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
     }
 
     [Fact]
