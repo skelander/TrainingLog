@@ -16,7 +16,8 @@ ASP.NET Core REST API for tracking workouts. Admins define workout types and the
 TrainingLog/
   Controllers/   AuthController, WorkoutTypesController, WorkoutsController
   Data/          AppDbContext
-  Models/        User, WorkoutType, FieldDefinition, FieldType, WorkoutSession, FieldValue
+  Models/        User, WorkoutType, FieldDefinition, FieldType, WorkoutSession, FieldValue,
+                 WorkoutTypeResponse, WorkoutSessionResponse, FieldDefResponse, FieldValueResponse
   Services/      IAuthService, AuthService, IWorkoutTypesService, WorkoutTypesService,
                  IWorkoutsService, WorkoutsService
 

@@ -16,6 +16,9 @@ Returns a signed JWT token (8-hour expiry).
 ### `GET /workout-types`
 Returns all workout types with their field definitions. Requires JWT.
 
+### `GET /workout-types/{id}`
+Returns a single workout type. Requires JWT.
+
 ### `POST /workout-types` *(admin)*
 Creates a new workout type.
 ```json
