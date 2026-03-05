@@ -170,6 +170,8 @@ function addFieldRow(name = '', type = 0, unit = '') {
 
 document.getElementById('type-form').addEventListener('submit', async e => {
   e.preventDefault();
+  const err = document.getElementById('type-error');
+  err.textContent = '';
 
   const name = document.getElementById('type-name').value.trim();
   const fields = [...document.querySelectorAll('.field-row')].map(row => ({
@@ -185,12 +187,15 @@ document.getElementById('type-form').addEventListener('submit', async e => {
   if (res?.ok) {
     resetTypeForm();
     await loadWorkoutTypes();
+  } else {
+    err.textContent = `Error ${res?.status ?? '—'}: could not save workout type.`;
   }
 });
 
 function resetTypeForm() {
   editingTypeId = null;
   document.getElementById('type-name').value = '';
+  document.getElementById('type-error').textContent = '';
   fieldsContainer.innerHTML = '';
   typeFormTitle.textContent = 'New Workout Type';
   typeSubmitBtn.textContent = 'Create';
@@ -306,6 +311,9 @@ document.getElementById('session-type').addEventListener('change', function () {
 
 document.getElementById('session-form').addEventListener('submit', async e => {
   e.preventDefault();
+  const err = document.getElementById('session-error');
+  err.textContent = '';
+
   const typeId = parseInt(document.getElementById('session-type').value);
   const loggedAt = document.getElementById('session-date').value;
   const notes = document.getElementById('session-notes').value.trim() || null;
@@ -322,6 +330,8 @@ document.getElementById('session-form').addEventListener('submit', async e => {
     document.getElementById('session-fields').innerHTML = '';
     setSessionDateDefault();
     await loadSessions();
+  } else {
+    err.textContent = `Error ${res?.status ?? '—'}: could not log session.`;
   }
 });
 
