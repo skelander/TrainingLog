@@ -43,36 +43,38 @@ document.getElementById('login-form').addEventListener('submit', async e => {
   btn.disabled = true;
   btn.textContent = 'Logging in…';
 
-  let res;
   try {
-    res = await fetch(API + '/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: document.getElementById('username').value,
-        password: document.getElementById('password').value,
-      }),
-    });
-  } catch {
-    err.textContent = 'Could not reach the server.';
-    btn.disabled = false;
-    btn.textContent = 'Log in';
-    return;
+    let res;
+    try {
+      res = await fetch(API + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value,
+        }),
+      });
+    } catch (fetchErr) {
+      err.textContent = `Could not reach the server: ${fetchErr.message}`;
+      return;
+    }
+
+    if (!res.ok) { err.textContent = 'Invalid credentials.'; return; }
+
+    const data = await res.json();
+    token = data.token;
+    currentUser = data.user;
+    currentRole = data.role;
+    localStorage.setItem('tl_token', token);
+    localStorage.setItem('tl_user', currentUser);
+    localStorage.setItem('tl_role', currentRole);
+    await showApp();
+  } catch (unexpected) {
+    err.textContent = `Error: ${unexpected.message}`;
   } finally {
     btn.disabled = false;
     btn.textContent = 'Log in';
   }
-
-  if (!res.ok) { err.textContent = 'Invalid credentials.'; return; }
-
-  const data = await res.json();
-  token = data.token;
-  currentUser = data.user;
-  currentRole = data.role;
-  localStorage.setItem('tl_token', token);
-  localStorage.setItem('tl_user', currentUser);
-  localStorage.setItem('tl_role', currentRole);
-  await showApp();
 });
 
 document.getElementById('logout-btn').addEventListener('click', logout);
