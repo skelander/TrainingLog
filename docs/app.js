@@ -1,9 +1,12 @@
 const API = 'https://traininglog-rikard.fly.dev';
 const FIELD_TYPES = ['Number', 'Text', 'Duration'];
+const LS_TOKEN = 'tl_token';
+const LS_USER  = 'tl_user';
+const LS_ROLE  = 'tl_role';
 
-let token = localStorage.getItem('tl_token');
-let currentUser = localStorage.getItem('tl_user');
-let currentRole = localStorage.getItem('tl_role');
+let token = localStorage.getItem(LS_TOKEN);
+let currentUser = localStorage.getItem(LS_USER);
+let currentRole = localStorage.getItem(LS_ROLE);
 let workoutTypes = [];
 let editingTypeId = null;
 
@@ -64,9 +67,9 @@ document.getElementById('login-form').addEventListener('submit', async e => {
     token = data.token;
     currentUser = data.user;
     currentRole = data.role;
-    localStorage.setItem('tl_token', token);
-    localStorage.setItem('tl_user', currentUser);
-    localStorage.setItem('tl_role', currentRole);
+    localStorage.setItem(LS_TOKEN, token);
+    localStorage.setItem(LS_USER, currentUser);
+    localStorage.setItem(LS_ROLE, currentRole);
     await showApp();
   } catch (unexpected) {
     err.textContent = `Error: ${unexpected.message}`;
@@ -79,7 +82,7 @@ document.getElementById('login-form').addEventListener('submit', async e => {
 document.getElementById('logout-btn').addEventListener('click', logout);
 
 function logout() {
-  ['tl_token', 'tl_user', 'tl_role'].forEach(k => localStorage.removeItem(k));
+  [LS_TOKEN, LS_USER, LS_ROLE].forEach(k => localStorage.removeItem(k));
   token = currentUser = currentRole = null;
   loginSection.hidden = false;
   appSection.hidden = true;
