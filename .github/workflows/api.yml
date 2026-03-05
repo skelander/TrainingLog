@@ -1,0 +1,34 @@
+name: API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'TrainingLog/**'
+      - 'TrainingLog.Tests/**'
+      - 'Dockerfile'
+      - 'fly.toml'
+      - '.github/workflows/api.yml'
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Build
+        run: dotnet build TrainingLog.slnx
+
+      - name: Test
+        run: dotnet test TrainingLog.Tests/TrainingLog.Tests.csproj --logger "console;verbosity=minimal"
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
