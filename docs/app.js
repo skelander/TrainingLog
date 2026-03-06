@@ -32,6 +32,10 @@ async function api(path, options = {}) {
       ...(options.headers ?? {}),
     },
   });
+  if (res.status === 401 && token) {
+    logout();
+    document.getElementById('login-error').textContent = 'Your session has expired. Please log in again.';
+  }
   return res;
 }
 
