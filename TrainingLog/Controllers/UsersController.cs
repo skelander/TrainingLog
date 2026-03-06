@@ -31,6 +31,8 @@ public class UsersController(IUsersService service, ILogger<UsersController> log
             return BadRequest("Username must be 1–50 characters.");
         if (string.IsNullOrEmpty(request.Password))
             return BadRequest("Password is required.");
+        if (request.Password.Length > 72)
+            return BadRequest("Password must be at most 72 characters.");
         if (request.Role is not "user" and not "admin")
             return BadRequest("Role must be 'user' or 'admin'.");
 
@@ -42,7 +44,12 @@ public class UsersController(IUsersService service, ILogger<UsersController> log
         }
         catch (DomainException ex)
         {
+            logger.LogWarning("Create user failed: {Reason}", ex.Message);
             return Conflict(new { error = ex.Message });
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new { error = "The resource was modified concurrently. Please retry." });
         }
     }
 
@@ -53,6 +60,8 @@ public class UsersController(IUsersService service, ILogger<UsersController> log
             return BadRequest("Username must be 1–50 characters.");
         if (request.Role is not "user" and not "admin")
             return BadRequest("Role must be 'user' or 'admin'.");
+        if (!string.IsNullOrEmpty(request.Password) && request.Password.Length > 72)
+            return BadRequest("Password must be at most 72 characters.");
 
         try
         {

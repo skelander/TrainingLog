@@ -11,7 +11,7 @@ namespace TrainingLog.Controllers;
 [ValidateUserId]
 public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsController> logger) : ControllerBase
 {
-    private int CurrentUserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
+    private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     private bool IsAdmin => User.IsInRole("admin");
 
     [HttpGet]

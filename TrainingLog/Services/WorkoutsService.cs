@@ -64,7 +64,10 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         };
         db.WorkoutSessions.Add(session);
         await db.SaveChangesAsync(cancellationToken);
-        return await GetByIdAsync(session.Id, cancellationToken);
+        await db.Entry(session).Reference(s => s.User).LoadAsync(cancellationToken);
+        await db.Entry(session).Reference(s => s.WorkoutType).LoadAsync(cancellationToken);
+        await db.Entry(session).Collection(s => s.Values).Query().Include(v => v.FieldDefinition).LoadAsync(cancellationToken);
+        return ToResponse(session);
     }
 
     public async Task<bool?> DeleteAsync(int id, int userId, bool isAdmin, CancellationToken cancellationToken = default)
