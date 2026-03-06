@@ -6,6 +6,7 @@ public record WorkoutTypeResponse(int Id, string Name, List<FieldDefResponse> Fi
 public record FieldValueResponse(int Id, int FieldDefinitionId, string FieldDefinitionName, string Value);
 public record WorkoutSessionResponse(
     int Id,
+    int UserId,
     string Username,
     int WorkoutTypeId,
     string WorkoutTypeName,

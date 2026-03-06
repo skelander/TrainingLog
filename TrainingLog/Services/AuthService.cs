@@ -4,10 +4,10 @@ namespace TrainingLog.Services;
 
 public class AuthService(AppDbContext db) : IAuthService
 {
-    public string? Authenticate(string username, string password)
+    public (int UserId, string Role)? Authenticate(string username, string password)
     {
         var user = db.Users.FirstOrDefault(u => u.Username == username);
         if (user is null) return null;
-        return BCrypt.Net.BCrypt.Verify(password, user.Password) ? user.Role : null;
+        return BCrypt.Net.BCrypt.Verify(password, user.Password) ? (user.Id, user.Role) : null;
     }
 }

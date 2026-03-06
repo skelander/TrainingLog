@@ -19,14 +19,16 @@ public class AuthController(IAuthService auth, IConfiguration config) : Controll
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
             return BadRequest("Username and password are required.");
 
-        var role = auth.Authenticate(request.Username, request.Password);
-        if (role is null) return Unauthorized();
+        var result = auth.Authenticate(request.Username, request.Password);
+        if (result is null) return Unauthorized();
+        var (userId, role) = result.Value;
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var claims = new[]
         {
             new Claim(ClaimTypes.Name, request.Username),
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Role, role),
         };
         var token = new JwtSecurityToken(

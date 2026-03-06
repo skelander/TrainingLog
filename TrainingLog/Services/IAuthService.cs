@@ -2,5 +2,5 @@ namespace TrainingLog.Services;
 
 public interface IAuthService
 {
-    string? Authenticate(string username, string password);
+    (int UserId, string Role)? Authenticate(string username, string password);
 }

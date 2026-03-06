@@ -10,18 +10,18 @@ namespace TrainingLog.Controllers;
 [Authorize]
 public class WorkoutsController(IWorkoutsService service) : ControllerBase
 {
-    private string CurrentUser => User.FindFirstValue(ClaimTypes.Name)!;
+    private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     private bool IsAdmin => User.IsInRole("admin");
 
     [HttpGet]
-    public IActionResult GetMine() => Ok(service.GetForUser(CurrentUser));
+    public IActionResult GetMine() => Ok(service.GetForUser(CurrentUserId));
 
     [HttpGet("{id}")]
     public IActionResult GetById(int id)
     {
         var session = service.GetById(id);
         if (session is null) return NotFound();
-        if (!IsAdmin && session.Username != CurrentUser) return Forbid();
+        if (!IsAdmin && session.UserId != CurrentUserId) return Forbid();
         return Ok(session);
     }
 
@@ -35,7 +35,7 @@ public class WorkoutsController(IWorkoutsService service) : ControllerBase
         if (request.Notes?.Length > 1000)
             return BadRequest("Notes must be at most 1000 characters.");
 
-        var session = service.Create(CurrentUser, request.WorkoutTypeId, request.LoggedAt, request.Notes, request.Values);
+        var session = service.Create(CurrentUserId, request.WorkoutTypeId, request.LoggedAt, request.Notes, request.Values);
         if (session is null) return BadRequest("Workout type not found.");
         return CreatedAtAction(nameof(GetById), new { id = session.Id }, session);
     }
@@ -43,7 +43,7 @@ public class WorkoutsController(IWorkoutsService service) : ControllerBase
     [HttpDelete("{id}")]
     public IActionResult Delete(int id)
     {
-        var deleted = service.Delete(id, CurrentUser, IsAdmin);
+        var deleted = service.Delete(id, CurrentUserId, IsAdmin);
         if (!deleted)
         {
             var session = service.GetById(id);

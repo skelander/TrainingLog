@@ -6,11 +6,12 @@ namespace TrainingLog.Services;
 
 public class WorkoutsService(AppDbContext db) : IWorkoutsService
 {
-    public List<WorkoutSessionResponse> GetForUser(string username) =>
+    public List<WorkoutSessionResponse> GetForUser(int userId) =>
         db.WorkoutSessions
+            .Include(s => s.User)
             .Include(s => s.WorkoutType)
             .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
-            .Where(s => s.Username == username)
+            .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.LoggedAt)
             .ToList()
             .Select(ToResponse)
@@ -19,19 +20,20 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
     public WorkoutSessionResponse? GetById(int id)
     {
         var session = db.WorkoutSessions
+            .Include(s => s.User)
             .Include(s => s.WorkoutType)
             .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
             .FirstOrDefault(s => s.Id == id);
         return session is null ? null : ToResponse(session);
     }
 
-    public WorkoutSessionResponse? Create(string username, int workoutTypeId, DateTime loggedAt, string? notes, List<FieldValueRequest> values)
+    public WorkoutSessionResponse? Create(int userId, int workoutTypeId, DateTime loggedAt, string? notes, List<FieldValueRequest> values)
     {
         if (!db.WorkoutTypes.Any(t => t.Id == workoutTypeId)) return null;
 
         var session = new WorkoutSession
         {
-            Username = username,
+            UserId = userId,
             WorkoutTypeId = workoutTypeId,
             LoggedAt = loggedAt,
             Notes = notes,
@@ -42,11 +44,11 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         return GetById(session.Id);
     }
 
-    public bool Delete(int id, string username, bool isAdmin)
+    public bool Delete(int id, int userId, bool isAdmin)
     {
         var session = db.WorkoutSessions.Find(id);
         if (session is null) return false;
-        if (!isAdmin && session.Username != username) return false;
+        if (!isAdmin && session.UserId != userId) return false;
         db.WorkoutSessions.Remove(session);
         db.SaveChanges();
         return true;
@@ -54,7 +56,8 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
 
     private static WorkoutSessionResponse ToResponse(WorkoutSession s) =>
         new(s.Id,
-            s.Username,
+            s.UserId,
+            s.User!.Username,
             s.WorkoutTypeId,
             s.WorkoutType?.Name ?? string.Empty,
             s.LoggedAt,
