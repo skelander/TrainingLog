@@ -10,33 +10,34 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
 {
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetAll() => Ok(await service.GetAllAsync());
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken) =>
+        Ok(await service.GetAllAsync(cancellationToken));
 
     [HttpGet("{id}")]
     [Authorize]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
-        var type = await service.GetByIdAsync(id);
+        var type = await service.GetByIdAsync(id, cancellationToken);
         return type is null ? NotFound() : Ok(type);
     }
 
     [HttpPost]
     [Authorize(Roles = "admin")]
-    public async Task<IActionResult> Create([FromBody] WorkoutTypeRequest request)
+    public async Task<IActionResult> Create([FromBody] WorkoutTypeRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
             return BadRequest("Name must be 1–100 characters.");
         if (request.Fields == null)
             return BadRequest("Fields is required.");
 
-        var type = await service.CreateAsync(request.Name, request.Fields);
+        var type = await service.CreateAsync(request.Name, request.Fields, cancellationToken);
         logger.LogInformation("Workout type {TypeId} ({Name}) created", type.Id, type.Name);
         return CreatedAtAction(nameof(GetById), new { id = type.Id }, type);
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = "admin")]
-    public async Task<IActionResult> Update(int id, [FromBody] WorkoutTypeRequest request)
+    public async Task<IActionResult> Update(int id, [FromBody] WorkoutTypeRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
             return BadRequest("Name must be 1–100 characters.");
@@ -45,7 +46,7 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
 
         try
         {
-            var type = await service.UpdateAsync(id, request.Name, request.Fields);
+            var type = await service.UpdateAsync(id, request.Name, request.Fields, cancellationToken);
             if (type is null) return NotFound();
             logger.LogInformation("Workout type {TypeId} updated", id);
             return Ok(type);
@@ -59,9 +60,9 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "admin")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var result = await service.DeleteAsync(id);
+        var result = await service.DeleteAsync(id, cancellationToken);
         if (result is true)
             logger.LogInformation("Workout type {TypeId} deleted", id);
         else if (result is false)

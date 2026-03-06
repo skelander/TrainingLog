@@ -2,5 +2,5 @@ namespace TrainingLog.Services;
 
 public interface IAuthService
 {
-    Task<(int UserId, string Role)?> AuthenticateAsync(string username, string password);
+    Task<(int UserId, string Role)?> AuthenticateAsync(string username, string password, CancellationToken cancellationToken = default);
 }

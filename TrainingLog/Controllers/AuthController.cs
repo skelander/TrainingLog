@@ -14,12 +14,12 @@ public class AuthController(IAuthService auth, IConfiguration config, ILogger<Au
 {
     [HttpPost("login")]
     [EnableRateLimiting("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
             return BadRequest("Username and password are required.");
 
-        var result = await auth.AuthenticateAsync(request.Username, request.Password);
+        var result = await auth.AuthenticateAsync(request.Username, request.Password, cancellationToken);
         if (result is null)
         {
             logger.LogWarning("Failed login attempt for user {Username}", request.Username);

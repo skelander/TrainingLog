@@ -23,18 +23,19 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
     void IActionFilter.OnActionExecuted(ActionExecutedContext context) { }
 
     [HttpGet]
-    public async Task<IActionResult> GetMine() => Ok(await service.GetForUserAsync(CurrentUserId));
+    public async Task<IActionResult> GetMine(CancellationToken cancellationToken) =>
+        Ok(await service.GetForUserAsync(CurrentUserId, cancellationToken));
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
-        var session = await service.GetByIdAsync(id);
+        var session = await service.GetByIdAsync(id, cancellationToken);
         if (session is null || (!IsAdmin && session.UserId != CurrentUserId)) return NotFound();
         return Ok(session);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateWorkoutRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateWorkoutRequest request, CancellationToken cancellationToken)
     {
         if (request.WorkoutTypeId <= 0)
             return BadRequest("WorkoutTypeId must be a positive integer.");
@@ -45,7 +46,7 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
 
         try
         {
-            var session = await service.CreateAsync(CurrentUserId, request.WorkoutTypeId, request.LoggedAt, request.Notes, request.Values);
+            var session = await service.CreateAsync(CurrentUserId, request.WorkoutTypeId, request.LoggedAt, request.Notes, request.Values, cancellationToken);
             if (session is null) return BadRequest("Workout type not found.");
             logger.LogInformation("User {UserId} logged workout session {SessionId}", CurrentUserId, session.Id);
             return CreatedAtAction(nameof(GetById), new { id = session.Id }, session);
@@ -57,9 +58,9 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var result = await service.DeleteAsync(id, CurrentUserId, IsAdmin);
+        var result = await service.DeleteAsync(id, CurrentUserId, IsAdmin, cancellationToken);
         if (result is true)
             logger.LogInformation("User {UserId} deleted workout session {SessionId}", CurrentUserId, id);
         return result switch
