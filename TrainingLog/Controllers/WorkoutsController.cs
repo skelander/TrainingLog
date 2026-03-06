@@ -28,6 +28,13 @@ public class WorkoutsController(IWorkoutsService service) : ControllerBase
     [HttpPost]
     public IActionResult Create([FromBody] CreateWorkoutRequest request)
     {
+        if (request.WorkoutTypeId <= 0)
+            return BadRequest("WorkoutTypeId must be a positive integer.");
+        if (request.Values == null)
+            return BadRequest("Values is required.");
+        if (request.Notes?.Length > 1000)
+            return BadRequest("Notes must be at most 1000 characters.");
+
         var session = service.Create(CurrentUser, request.WorkoutTypeId, request.LoggedAt, request.Notes, request.Values);
         if (session is null) return BadRequest("Workout type not found.");
         return CreatedAtAction(nameof(GetById), new { id = session.Id }, session);

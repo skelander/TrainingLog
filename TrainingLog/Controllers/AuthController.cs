@@ -14,6 +14,9 @@ public class AuthController(IAuthService auth, IConfiguration config) : Controll
     [HttpPost("login")]
     public IActionResult Login([FromBody] LoginRequest request)
     {
+        if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+            return BadRequest("Username and password are required.");
+
         var role = auth.Authenticate(request.Username, request.Password);
         if (role is null) return Unauthorized();
 

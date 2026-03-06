@@ -24,6 +24,11 @@ public class WorkoutTypesController(IWorkoutTypesService service) : ControllerBa
     [Authorize(Roles = "admin")]
     public IActionResult Create([FromBody] WorkoutTypeRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
+            return BadRequest("Name must be 1–100 characters.");
+        if (request.Fields == null)
+            return BadRequest("Fields is required.");
+
         var type = service.Create(request.Name, request.Fields);
         return CreatedAtAction(nameof(GetById), new { id = type.Id }, type);
     }
@@ -32,6 +37,11 @@ public class WorkoutTypesController(IWorkoutTypesService service) : ControllerBa
     [Authorize(Roles = "admin")]
     public IActionResult Update(int id, [FromBody] WorkoutTypeRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
+            return BadRequest("Name must be 1–100 characters.");
+        if (request.Fields == null)
+            return BadRequest("Fields is required.");
+
         var type = service.Update(id, request.Name, request.Fields);
         return type is null ? NotFound() : Ok(type);
     }

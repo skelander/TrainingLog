@@ -41,11 +41,20 @@ public class AuthControllerTests : IClassFixture<TrainingLogFactory>
     [Theory]
     [InlineData("admin", "wrong")]
     [InlineData("nobody", "pass")]
-    [InlineData("", "")]
     public async Task Login_InvalidCredentials_Returns401(string username, string password)
     {
         var res = await _client.PostAsJsonAsync("/auth/login", new { Username = username, Password = password });
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("", "")]
+    [InlineData("", "pass")]
+    [InlineData("user", "")]
+    public async Task Login_MissingCredentials_Returns400(string username, string password)
+    {
+        var res = await _client.PostAsJsonAsync("/auth/login", new { Username = username, Password = password });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
 
     private record LoginResponse(string User, string Role, string Token);
