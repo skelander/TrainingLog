@@ -80,7 +80,8 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
     if (!db.Users.Any())
     {
-        static string Hash(string pw) => BCrypt.Net.BCrypt.HashPassword(pw);
+        var workFactor = config.GetValue<int>("BCrypt:WorkFactor", 11);
+        string Hash(string pw) => BCrypt.Net.BCrypt.HashPassword(pw, workFactor);
         db.Users.AddRange(
             new User { Username = "alice", Password = Hash("alice"), Role = "user" },
             new User { Username = "bob",   Password = Hash("bob"),   Role = "user" },
