@@ -41,12 +41,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddFixedWindowLimiter("login", opt =>
+    options.AddPolicy("login", httpContext =>
     {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 10;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 0;
+        var config = httpContext.RequestServices.GetRequiredService<IConfiguration>();
+        var permitLimit = config.GetValue<int>("RateLimit:LoginPermitLimit", 10);
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = permitLimit,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            });
     });
     options.RejectionStatusCode = 429;
 });

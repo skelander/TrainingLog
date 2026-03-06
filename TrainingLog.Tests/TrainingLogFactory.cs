@@ -20,7 +20,8 @@ public class TrainingLogFactory : WebApplicationFactory<Program>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Jwt:Key"] = "test-only-key-not-used-in-production-32ch"
+                ["Jwt:Key"] = "test-only-key-not-used-in-production-32ch",
+                ["RateLimit:LoginPermitLimit"] = "1000"
             });
         });
 
