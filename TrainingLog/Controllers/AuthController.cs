@@ -10,7 +10,7 @@ namespace TrainingLog.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class AuthController(IAuthService auth, IConfiguration config) : ControllerBase
+public class AuthController(IAuthService auth, IConfiguration config, ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("login")]
     [EnableRateLimiting("login")]
@@ -20,8 +20,13 @@ public class AuthController(IAuthService auth, IConfiguration config) : Controll
             return BadRequest("Username and password are required.");
 
         var result = await auth.AuthenticateAsync(request.Username, request.Password);
-        if (result is null) return Unauthorized();
+        if (result is null)
+        {
+            logger.LogWarning("Failed login attempt for user {Username}", request.Username);
+            return Unauthorized();
+        }
         var (userId, role) = result.Value;
+        logger.LogInformation("User {Username} logged in with role {Role}", request.Username, role);
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

@@ -6,7 +6,7 @@ namespace TrainingLog.Controllers;
 
 [ApiController]
 [Route("workout-types")]
-public class WorkoutTypesController(IWorkoutTypesService service) : ControllerBase
+public class WorkoutTypesController(IWorkoutTypesService service, ILogger<WorkoutTypesController> logger) : ControllerBase
 {
     [HttpGet]
     [Authorize]
@@ -30,6 +30,7 @@ public class WorkoutTypesController(IWorkoutTypesService service) : ControllerBa
             return BadRequest("Fields is required.");
 
         var type = await service.CreateAsync(request.Name, request.Fields);
+        logger.LogInformation("Workout type {TypeId} ({Name}) created", type.Id, type.Name);
         return CreatedAtAction(nameof(GetById), new { id = type.Id }, type);
     }
 
@@ -45,10 +46,13 @@ public class WorkoutTypesController(IWorkoutTypesService service) : ControllerBa
         try
         {
             var type = await service.UpdateAsync(id, request.Name, request.Fields);
-            return type is null ? NotFound() : Ok(type);
+            if (type is null) return NotFound();
+            logger.LogInformation("Workout type {TypeId} updated", id);
+            return Ok(type);
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning("Cannot update workout type {TypeId}: {Reason}", id, ex.Message);
             return Conflict(new { error = ex.Message });
         }
     }
@@ -57,7 +61,12 @@ public class WorkoutTypesController(IWorkoutTypesService service) : ControllerBa
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        return await service.DeleteAsync(id) switch
+        var result = await service.DeleteAsync(id);
+        if (result is true)
+            logger.LogInformation("Workout type {TypeId} deleted", id);
+        else if (result is false)
+            logger.LogWarning("Cannot delete workout type {TypeId}: has existing sessions", id);
+        return result switch
         {
             true => NoContent(),
             false => Conflict(new { error = "Cannot delete workout type with existing sessions." }),

@@ -9,7 +9,7 @@ namespace TrainingLog.Controllers;
 [ApiController]
 [Route("workouts")]
 [Authorize]
-public class WorkoutsController(IWorkoutsService service) : ControllerBase, IActionFilter
+public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsController> logger) : ControllerBase, IActionFilter
 {
     private int CurrentUserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
     private bool IsAdmin => User.IsInRole("admin");
@@ -47,6 +47,7 @@ public class WorkoutsController(IWorkoutsService service) : ControllerBase, IAct
         {
             var session = await service.CreateAsync(CurrentUserId, request.WorkoutTypeId, request.LoggedAt, request.Notes, request.Values);
             if (session is null) return BadRequest("Workout type not found.");
+            logger.LogInformation("User {UserId} logged workout session {SessionId}", CurrentUserId, session.Id);
             return CreatedAtAction(nameof(GetById), new { id = session.Id }, session);
         }
         catch (InvalidOperationException ex)
@@ -58,7 +59,10 @@ public class WorkoutsController(IWorkoutsService service) : ControllerBase, IAct
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        return await service.DeleteAsync(id, CurrentUserId, IsAdmin) switch
+        var result = await service.DeleteAsync(id, CurrentUserId, IsAdmin);
+        if (result is true)
+            logger.LogInformation("User {UserId} deleted workout session {SessionId}", CurrentUserId, id);
+        return result switch
         {
             true => NoContent(),
             false => Forbid(),
