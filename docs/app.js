@@ -210,11 +210,15 @@ document.getElementById('type-form').addEventListener('submit', async e => {
   err.textContent = '';
 
   const name = document.getElementById('type-name').value.trim();
+  if (!name) { err.textContent = 'Name is required.'; return; }
+  if (name.length > 100) { err.textContent = 'Name must be at most 100 characters.'; return; }
+
   const fields = [...document.querySelectorAll('.field-row')].map(row => ({
     name: row.querySelector('.field-name').value.trim(),
     type: parseInt(row.querySelector('.field-type').value),
     unit: row.querySelector('.field-unit').value.trim() || null,
   }));
+  if (fields.some(f => !f.name)) { err.textContent = 'All field names are required.'; return; }
 
   const isEdit = editingTypeId !== null;
   const path = isEdit ? `/workout-types/${editingTypeId}` : '/workout-types';
@@ -368,7 +372,9 @@ document.getElementById('session-form').addEventListener('submit', async e => {
   const typeId = parseInt(document.getElementById('session-type').value);
   if (!typeId) { err.textContent = 'Please select a workout type.'; return; }
   const loggedAt = document.getElementById('session-date').value;
+  if (!loggedAt) { err.textContent = 'Date is required.'; return; }
   const notes = document.getElementById('session-notes').value.trim() || null;
+  if (notes && notes.length > 1000) { err.textContent = 'Notes must be at most 1000 characters.'; return; }
   const values = [...document.querySelectorAll('.session-field-value')].map(inp => ({
     fieldDefinitionId: parseInt(inp.dataset.fieldId),
     value: inp.value,
