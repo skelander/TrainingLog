@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using TrainingLog.Services;
 
@@ -12,6 +13,7 @@ namespace TrainingLog.Controllers;
 public class AuthController(IAuthService auth, IConfiguration config) : ControllerBase
 {
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public IActionResult Login([FromBody] LoginRequest request)
     {
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))

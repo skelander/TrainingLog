@@ -366,6 +366,7 @@ document.getElementById('session-form').addEventListener('submit', async e => {
   err.textContent = '';
 
   const typeId = parseInt(document.getElementById('session-type').value);
+  if (!typeId) { err.textContent = 'Please select a workout type.'; return; }
   const loggedAt = document.getElementById('session-date').value;
   const notes = document.getElementById('session-notes').value.trim() || null;
   const values = [...document.querySelectorAll('.session-field-value')].map(inp => ({
