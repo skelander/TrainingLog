@@ -36,7 +36,7 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
 
         var fieldIds = type.Fields.Select(f => f.Id).ToHashSet();
         if (await db.FieldValues.AnyAsync(v => fieldIds.Contains(v.FieldDefinitionId), cancellationToken))
-            throw new InvalidOperationException(
+            throw new DomainException(
                 "Cannot update fields: existing workout sessions have logged values for this type. Delete those sessions first.");
 
         db.FieldDefinitions.RemoveRange(type.Fields);

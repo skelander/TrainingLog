@@ -1,20 +1,20 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TrainingLog.Services;
 
 namespace TrainingLog.Controllers;
 
 [ApiController]
 [Route("workout-types")]
+[Authorize]
 public class WorkoutTypesController(IWorkoutTypesService service, ILogger<WorkoutTypesController> logger) : ControllerBase
 {
     [HttpGet]
-    [Authorize]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken) =>
         Ok(await service.GetAllAsync(cancellationToken));
 
     [HttpGet("{id}")]
-    [Authorize]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         var type = await service.GetByIdAsync(id, cancellationToken);
@@ -51,10 +51,14 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
             logger.LogInformation("Workout type {TypeId} updated", id);
             return Ok(type);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainException ex)
         {
             logger.LogWarning("Cannot update workout type {TypeId}: {Reason}", id, ex.Message);
             return Conflict(new { error = ex.Message });
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new { error = "The resource was modified concurrently. Please retry." });
         }
     }
 

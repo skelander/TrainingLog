@@ -1,17 +1,36 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using TrainingLog.Data;
 using Xunit;
 
 namespace TrainingLog.Tests;
 
-public class WorkoutTypesControllerTests : IClassFixture<TrainingLogFactory>
+public class WorkoutTypesControllerTests : IClassFixture<TrainingLogFactory>, IAsyncLifetime
 {
     private readonly HttpClient _client;
+    private readonly TrainingLogFactory _factory;
 
     public WorkoutTypesControllerTests(TrainingLogFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
+
+    public async Task InitializeAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.WorkoutSessions.RemoveRange(db.WorkoutSessions);
+        var extra = await db.WorkoutTypes
+            .Where(t => t.Name != "Running" && t.Name != "BJJ")
+            .ToListAsync();
+        db.WorkoutTypes.RemoveRange(extra);
+        await db.SaveChangesAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task GetAll_WithoutToken_Returns401()

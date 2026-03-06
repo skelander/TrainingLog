@@ -32,5 +32,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(v => v.FieldDefinitionId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FieldValue>()
+            .Property(v => v.Value)
+            .HasMaxLength(500);
     }
 }

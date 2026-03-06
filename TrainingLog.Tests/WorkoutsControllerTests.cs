@@ -1,17 +1,31 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
+using TrainingLog.Data;
 using Xunit;
 
 namespace TrainingLog.Tests;
 
-public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>
+public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>, IAsyncLifetime
 {
     private readonly HttpClient _client;
+    private readonly TrainingLogFactory _factory;
 
     public WorkoutsControllerTests(TrainingLogFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
+
+    public async Task InitializeAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.WorkoutSessions.RemoveRange(db.WorkoutSessions);
+        await db.SaveChangesAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private async Task<object> RunningSessionAsync(HttpClient client, string token, int? overrideTypeId = null)
     {

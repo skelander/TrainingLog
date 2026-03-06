@@ -39,7 +39,7 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
                 .ToListAsync(cancellationToken))
                 .ToDictionary(f => f.Id);
             if (values.Any(v => !fieldDefs.ContainsKey(v.FieldDefinitionId)))
-                throw new InvalidOperationException("One or more field definition IDs do not belong to the specified workout type.");
+                throw new DomainException("One or more field definition IDs do not belong to the specified workout type.");
             foreach (var v in values)
             {
                 var def = fieldDefs[v.FieldDefinitionId];
@@ -50,7 +50,7 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
                     _                  => true,
                 };
                 if (!valid)
-                    throw new InvalidOperationException($"Value '{v.Value}' is not valid for field '{def.Name}' (expected {def.Type}).");
+                    throw new DomainException($"Value '{v.Value}' is not valid for field '{def.Name}' (expected {def.Type}).");
             }
         }
 

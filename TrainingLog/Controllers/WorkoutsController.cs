@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using TrainingLog.Services;
 
 namespace TrainingLog.Controllers;
@@ -9,18 +8,11 @@ namespace TrainingLog.Controllers;
 [ApiController]
 [Route("workouts")]
 [Authorize]
-public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsController> logger) : ControllerBase, IActionFilter
+[ValidateUserId]
+public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsController> logger) : ControllerBase
 {
     private int CurrentUserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
     private bool IsAdmin => User.IsInRole("admin");
-
-    void IActionFilter.OnActionExecuting(ActionExecutingContext context)
-    {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out _))
-            context.Result = Unauthorized();
-    }
-
-    void IActionFilter.OnActionExecuted(ActionExecutedContext context) { }
 
     [HttpGet]
     public async Task<IActionResult> GetMine(CancellationToken cancellationToken) =>
@@ -43,6 +35,8 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
             return BadRequest("Values is required.");
         if (request.Notes?.Length > 1000)
             return BadRequest("Notes must be at most 1000 characters.");
+        if (request.Values.Any(v => v.Value.Length > 500))
+            return BadRequest("Field values must be at most 500 characters.");
 
         try
         {
@@ -51,8 +45,9 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
             logger.LogInformation("User {UserId} logged workout session {SessionId}", CurrentUserId, session.Id);
             return CreatedAtAction(nameof(GetById), new { id = session.Id }, session);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainException ex)
         {
+            logger.LogWarning("Create workout failed for user {UserId}: {Reason}", CurrentUserId, ex.Message);
             return BadRequest(ex.Message);
         }
     }
