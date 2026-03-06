@@ -155,5 +155,49 @@ public class WorkoutTypesControllerTests : IClassFixture<TrainingLogFactory>
         Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
 
+    [Fact]
+    public async Task Create_WithoutToken_Returns401()
+    {
+        var res = await _client.PostAsJsonAsync("/workout-types",
+            new { Name = "Test", Fields = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithEmptyName_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workout-types",
+            new { Name = "", Fields = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithNameTooLong_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workout-types",
+            new { Name = new string('x', 101), Fields = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_AsUser_Returns403()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var res = await _client.WithToken(token).DeleteAsync($"/workout-types/{types!.First().Id}");
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithNoFields_Returns201()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workout-types",
+            new { Name = "NoFields", Fields = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+    }
+
     private record WorkoutTypeResponse(int Id, string Name, List<object> Fields);
 }

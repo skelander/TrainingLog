@@ -144,5 +144,52 @@ public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>
         Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
 
-    private record WorkoutSessionResponse(int Id, string Username);
+    [Fact]
+    public async Task Create_WithoutToken_Returns401()
+    {
+        var res = await _client.PostAsJsonAsync("/workouts", new { });
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithTooLongNotes_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var typeId = types!.First(t => t.Name == "Running").Id;
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", new
+        {
+            WorkoutTypeId = typeId,
+            LoggedAt = DateTime.UtcNow,
+            Notes = new string('x', 1001),
+            Values = Array.Empty<object>()
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetMine_OnlyReturnsOwnSessions()
+    {
+        var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var bobToken   = await Helpers.GetTokenAsync(_client, "bob",   "bob");
+
+        await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, aliceToken));
+        await _client.WithToken(bobToken).PostAsJsonAsync("/workouts",   await RunningSessionAsync(_client, bobToken));
+
+        var sessions = await _client.WithToken(aliceToken).GetFromJsonAsync<List<WorkoutSessionResponse>>("/workouts");
+        Assert.NotNull(sessions);
+        Assert.All(sessions, s => Assert.Equal("alice", s.Username));
+    }
+
+    [Fact]
+    public async Task Create_ResponseHasCorrectUsername()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var created = await _client.WithToken(token).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, token));
+        var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
+        Assert.Equal("alice", session!.Username);
+        Assert.True(session.UserId > 0);
+    }
+
+    private record WorkoutSessionResponse(int Id, int UserId, string Username);
 }
