@@ -6,30 +6,41 @@ namespace TrainingLog.Services;
 
 public class WorkoutsService(AppDbContext db) : IWorkoutsService
 {
-    public List<WorkoutSessionResponse> GetForUser(int userId) =>
-        db.WorkoutSessions
+    public async Task<List<WorkoutSessionResponse>> GetForUserAsync(int userId) =>
+        (await db.WorkoutSessions
             .Include(s => s.User)
             .Include(s => s.WorkoutType)
             .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
             .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.LoggedAt)
-            .ToList()
+            .ToListAsync())
             .Select(ToResponse)
             .ToList();
 
-    public WorkoutSessionResponse? GetById(int id)
+    public async Task<WorkoutSessionResponse?> GetByIdAsync(int id)
     {
-        var session = db.WorkoutSessions
+        var session = await db.WorkoutSessions
             .Include(s => s.User)
             .Include(s => s.WorkoutType)
             .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
-            .FirstOrDefault(s => s.Id == id);
+            .FirstOrDefaultAsync(s => s.Id == id);
         return session is null ? null : ToResponse(session);
     }
 
-    public WorkoutSessionResponse? Create(int userId, int workoutTypeId, DateTime loggedAt, string? notes, List<FieldValueRequest> values)
+    public async Task<WorkoutSessionResponse?> CreateAsync(int userId, int workoutTypeId, DateTime loggedAt, string? notes, List<FieldValueRequest> values)
     {
-        if (!db.WorkoutTypes.Any(t => t.Id == workoutTypeId)) return null;
+        if (!await db.WorkoutTypes.AnyAsync(t => t.Id == workoutTypeId)) return null;
+
+        if (values.Count > 0)
+        {
+            var validFieldIds = (await db.FieldDefinitions
+                .Where(f => f.WorkoutTypeId == workoutTypeId)
+                .Select(f => f.Id)
+                .ToListAsync())
+                .ToHashSet();
+            if (values.Any(v => !validFieldIds.Contains(v.FieldDefinitionId)))
+                throw new InvalidOperationException("One or more field definition IDs do not belong to the specified workout type.");
+        }
 
         var session = new WorkoutSession
         {
@@ -40,17 +51,17 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
             Values = values.Select(v => new FieldValue { FieldDefinitionId = v.FieldDefinitionId, Value = v.Value }).ToList()
         };
         db.WorkoutSessions.Add(session);
-        db.SaveChanges();
-        return GetById(session.Id);
+        await db.SaveChangesAsync();
+        return await GetByIdAsync(session.Id);
     }
 
-    public bool Delete(int id, int userId, bool isAdmin)
+    public async Task<bool?> DeleteAsync(int id, int userId, bool isAdmin)
     {
-        var session = db.WorkoutSessions.Find(id);
-        if (session is null) return false;
+        var session = await db.WorkoutSessions.FindAsync(id);
+        if (session is null) return null;
         if (!isAdmin && session.UserId != userId) return false;
         db.WorkoutSessions.Remove(session);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return true;
     }
 

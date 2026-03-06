@@ -70,7 +70,7 @@ Deletes a session. Owner or admin only.
 ## Tech stack
 
 - .NET 10 / ASP.NET Core MVC
-- EF Core (in-memory database)
+- EF Core + SQLite
 - xUnit + `WebApplicationFactory`
 - Docker + Fly.io
 - GitHub Actions (CI/CD)

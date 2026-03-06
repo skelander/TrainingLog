@@ -10,47 +10,59 @@ public class WorkoutTypesController(IWorkoutTypesService service) : ControllerBa
 {
     [HttpGet]
     [Authorize]
-    public IActionResult GetAll() => Ok(service.GetAll());
+    public async Task<IActionResult> GetAll() => Ok(await service.GetAllAsync());
 
     [HttpGet("{id}")]
     [Authorize]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var type = service.GetById(id);
+        var type = await service.GetByIdAsync(id);
         return type is null ? NotFound() : Ok(type);
     }
 
     [HttpPost]
     [Authorize(Roles = "admin")]
-    public IActionResult Create([FromBody] WorkoutTypeRequest request)
+    public async Task<IActionResult> Create([FromBody] WorkoutTypeRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
             return BadRequest("Name must be 1–100 characters.");
         if (request.Fields == null)
             return BadRequest("Fields is required.");
 
-        var type = service.Create(request.Name, request.Fields);
+        var type = await service.CreateAsync(request.Name, request.Fields);
         return CreatedAtAction(nameof(GetById), new { id = type.Id }, type);
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = "admin")]
-    public IActionResult Update(int id, [FromBody] WorkoutTypeRequest request)
+    public async Task<IActionResult> Update(int id, [FromBody] WorkoutTypeRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
             return BadRequest("Name must be 1–100 characters.");
         if (request.Fields == null)
             return BadRequest("Fields is required.");
 
-        var type = service.Update(id, request.Name, request.Fields);
-        return type is null ? NotFound() : Ok(type);
+        try
+        {
+            var type = await service.UpdateAsync(id, request.Name, request.Fields);
+            return type is null ? NotFound() : Ok(type);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { error = ex.Message });
+        }
     }
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "admin")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        return service.Delete(id) ? NoContent() : NotFound();
+        return await service.DeleteAsync(id) switch
+        {
+            true => NoContent(),
+            false => Conflict(new { error = "Cannot delete workout type with existing sessions." }),
+            null => NotFound(),
+        };
     }
 }
 

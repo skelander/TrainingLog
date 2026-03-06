@@ -6,16 +6,16 @@ namespace TrainingLog.Services;
 
 public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
 {
-    public List<WorkoutTypeResponse> GetAll() =>
-        db.WorkoutTypes.Include(w => w.Fields).ToList().Select(ToResponse).ToList();
+    public async Task<List<WorkoutTypeResponse>> GetAllAsync() =>
+        (await db.WorkoutTypes.Include(w => w.Fields).ToListAsync()).Select(ToResponse).ToList();
 
-    public WorkoutTypeResponse? GetById(int id)
+    public async Task<WorkoutTypeResponse?> GetByIdAsync(int id)
     {
-        var type = db.WorkoutTypes.Include(w => w.Fields).FirstOrDefault(w => w.Id == id);
+        var type = await db.WorkoutTypes.Include(w => w.Fields).FirstOrDefaultAsync(w => w.Id == id);
         return type is null ? null : ToResponse(type);
     }
 
-    public WorkoutTypeResponse Create(string name, List<FieldDefinitionRequest> fields)
+    public async Task<WorkoutTypeResponse> CreateAsync(string name, List<FieldDefinitionRequest> fields)
     {
         var type = new WorkoutType
         {
@@ -23,28 +23,35 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
             Fields = fields.Select(f => new FieldDefinition { Name = f.Name, Type = f.Type, Unit = f.Unit }).ToList()
         };
         db.WorkoutTypes.Add(type);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return ToResponse(type);
     }
 
-    public WorkoutTypeResponse? Update(int id, string name, List<FieldDefinitionRequest> fields)
+    public async Task<WorkoutTypeResponse?> UpdateAsync(int id, string name, List<FieldDefinitionRequest> fields)
     {
-        var type = db.WorkoutTypes.Include(w => w.Fields).FirstOrDefault(w => w.Id == id);
+        var type = await db.WorkoutTypes.Include(w => w.Fields).FirstOrDefaultAsync(w => w.Id == id);
         if (type is null) return null;
 
         type.Name = name;
+
+        var fieldIds = type.Fields.Select(f => f.Id).ToHashSet();
+        if (await db.FieldValues.AnyAsync(v => fieldIds.Contains(v.FieldDefinitionId)))
+            throw new InvalidOperationException(
+                "Cannot update fields: existing workout sessions have logged values for this type. Delete those sessions first.");
+
         db.FieldDefinitions.RemoveRange(type.Fields);
         type.Fields = fields.Select(f => new FieldDefinition { Name = f.Name, Type = f.Type, Unit = f.Unit, WorkoutTypeId = id }).ToList();
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return ToResponse(type);
     }
 
-    public bool Delete(int id)
+    public async Task<bool?> DeleteAsync(int id)
     {
-        var type = db.WorkoutTypes.Find(id);
-        if (type is null) return false;
+        var type = await db.WorkoutTypes.FindAsync(id);
+        if (type is null) return null;
+        if (await db.WorkoutSessions.AnyAsync(s => s.WorkoutTypeId == id)) return false;
         db.WorkoutTypes.Remove(type);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return true;
     }
 

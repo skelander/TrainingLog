@@ -20,5 +20,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(s => s.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<WorkoutSession>()
+            .HasOne(s => s.WorkoutType)
+            .WithMany()
+            .HasForeignKey(s => s.WorkoutTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FieldValue>()
+            .HasOne(v => v.FieldDefinition)
+            .WithMany()
+            .HasForeignKey(v => v.FieldDefinitionId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

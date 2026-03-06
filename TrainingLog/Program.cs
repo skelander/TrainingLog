@@ -57,6 +57,7 @@ builder.Services.AddRateLimiter(options =>
     });
     options.RejectionStatusCode = 429;
 });
+builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -64,6 +65,10 @@ var app = builder.Build();
 // Apply migrations and seed initial data
 using (var scope = app.Services.CreateScope())
 {
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    if (string.IsNullOrEmpty(config["Jwt:Key"]))
+        throw new InvalidOperationException("Jwt:Key configuration is required. Set the 'Jwt__Key' environment variable.");
+
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
     if (!db.Users.Any())
@@ -111,6 +116,7 @@ app.UseHttpsRedirection();
 app.UseCors("GitHubPages");
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHealthChecks("/health");
 app.MapControllers();
 app.Run();
 

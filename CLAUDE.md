@@ -4,7 +4,7 @@ ASP.NET Core REST API for tracking workouts. Admins define workout types and the
 
 ## Tech Stack
 - .NET 10 / ASP.NET Core MVC
-- EF Core (in-memory database)
+- EF Core + SQLite
 - JWT Bearer authentication (HMAC-SHA256, 8-hour expiry)
 - xUnit + `WebApplicationFactory` for integration tests
 - Docker + Fly.io (API)
@@ -48,7 +48,7 @@ TrainingLog.Tests/
 - `POST /auth/login` → JWT token
 - All endpoints require auth
 - Admin-only: POST/PUT/DELETE /workout-types
-- Users see only their own workouts; admin can see all
+- Users see only their own workouts (GET /workouts); admin can view any session via GET /workouts/{id}
 
 ## Code Style
 - C# primary constructors

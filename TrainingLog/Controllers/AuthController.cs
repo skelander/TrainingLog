@@ -14,12 +14,12 @@ public class AuthController(IAuthService auth, IConfiguration config) : Controll
 {
     [HttpPost("login")]
     [EnableRateLimiting("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
             return BadRequest("Username and password are required.");
 
-        var result = auth.Authenticate(request.Username, request.Password);
+        var result = await auth.AuthenticateAsync(request.Username, request.Password);
         if (result is null) return Unauthorized();
         var (userId, role) = result.Value;
 

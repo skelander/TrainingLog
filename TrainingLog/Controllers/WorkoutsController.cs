@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using TrainingLog.Services;
 
 namespace TrainingLog.Controllers;
@@ -8,25 +9,33 @@ namespace TrainingLog.Controllers;
 [ApiController]
 [Route("workouts")]
 [Authorize]
-public class WorkoutsController(IWorkoutsService service) : ControllerBase
+public class WorkoutsController(IWorkoutsService service) : ControllerBase, IActionFilter
 {
-    private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int CurrentUserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
     private bool IsAdmin => User.IsInRole("admin");
 
+    void IActionFilter.OnActionExecuting(ActionExecutingContext context)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out _))
+            context.Result = Unauthorized();
+    }
+
+    void IActionFilter.OnActionExecuted(ActionExecutedContext context) { }
+
     [HttpGet]
-    public IActionResult GetMine() => Ok(service.GetForUser(CurrentUserId));
+    public async Task<IActionResult> GetMine() => Ok(await service.GetForUserAsync(CurrentUserId));
 
     [HttpGet("{id}")]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var session = service.GetById(id);
+        var session = await service.GetByIdAsync(id);
         if (session is null) return NotFound();
         if (!IsAdmin && session.UserId != CurrentUserId) return Forbid();
         return Ok(session);
     }
 
     [HttpPost]
-    public IActionResult Create([FromBody] CreateWorkoutRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateWorkoutRequest request)
     {
         if (request.WorkoutTypeId <= 0)
             return BadRequest("WorkoutTypeId must be a positive integer.");
@@ -35,22 +44,27 @@ public class WorkoutsController(IWorkoutsService service) : ControllerBase
         if (request.Notes?.Length > 1000)
             return BadRequest("Notes must be at most 1000 characters.");
 
-        var session = service.Create(CurrentUserId, request.WorkoutTypeId, request.LoggedAt, request.Notes, request.Values);
-        if (session is null) return BadRequest("Workout type not found.");
-        return CreatedAtAction(nameof(GetById), new { id = session.Id }, session);
+        try
+        {
+            var session = await service.CreateAsync(CurrentUserId, request.WorkoutTypeId, request.LoggedAt, request.Notes, request.Values);
+            if (session is null) return BadRequest("Workout type not found.");
+            return CreatedAtAction(nameof(GetById), new { id = session.Id }, session);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var deleted = service.Delete(id, CurrentUserId, IsAdmin);
-        if (!deleted)
+        return await service.DeleteAsync(id, CurrentUserId, IsAdmin) switch
         {
-            var session = service.GetById(id);
-            if (session is null) return NotFound();
-            return Forbid();
-        }
-        return NoContent();
+            true => NoContent(),
+            false => Forbid(),
+            null => NotFound(),
+        };
     }
 }
 
