@@ -48,6 +48,7 @@ Logs a new workout session. Requires JWT.
   ]
 }
 ```
+Constraints: `notes` ≤ 1000 characters; each `value` ≤ 500 characters.
 
 ### `GET /workouts/{id}`
 Returns a single session. Owner or admin only.

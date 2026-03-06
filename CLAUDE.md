@@ -14,19 +14,19 @@ ASP.NET Core REST API for tracking workouts. Admins define workout types and the
 ## Project Structure
 ```
 TrainingLog/
-  Controllers/   AuthController, WorkoutTypesController, WorkoutsController
+  Controllers/   AuthController, WorkoutTypesController, WorkoutsController, ValidateUserIdAttribute
   Data/          AppDbContext
   Models/        User, WorkoutType, FieldDefinition, FieldType, WorkoutSession, FieldValue,
                  WorkoutTypeResponse, WorkoutSessionResponse, FieldDefResponse, FieldValueResponse
   Services/      IAuthService, AuthService, IWorkoutTypesService, WorkoutTypesService,
-                 IWorkoutsService, WorkoutsService
+                 IWorkoutsService, WorkoutsService, DomainException
 
 TrainingLog.Tests/
   AuthControllerTests.cs
   WorkoutTypesControllerTests.cs
   WorkoutsControllerTests.cs
   Helpers.cs              GetTokenAsync, WithToken extension
-  TrainingLogFactory.cs   WebApplicationFactory subclass (SQLite in-memory, JWT test key, rate limit override)
+  TrainingLogFactory.cs   WebApplicationFactory subclass (SQLite in-memory, JWT test key, rate limit override, BCrypt work factor = 4)
 ```
 
 ## Architecture
