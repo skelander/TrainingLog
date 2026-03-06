@@ -25,7 +25,8 @@ TrainingLog.Tests/
   AuthControllerTests.cs
   WorkoutTypesControllerTests.cs
   WorkoutsControllerTests.cs
-  Helpers.cs     GetTokenAsync, WithToken extension
+  Helpers.cs              GetTokenAsync, WithToken extension
+  TrainingLogFactory.cs   WebApplicationFactory subclass (SQLite in-memory, JWT test key, rate limit override)
 ```
 
 ## Architecture
@@ -39,6 +40,7 @@ TrainingLog.Tests/
 | alice    | alice    | user  |
 | bob      | bob      | user  |
 | admin    | admin    | admin |
+| 1        | 1        | user  |
 
 ## Seeded Workout Types
 - Running: Distance (Number, km), Duration (Duration)
@@ -46,7 +48,8 @@ TrainingLog.Tests/
 
 ## Auth
 - `POST /auth/login` → JWT token
-- All endpoints require auth
+- `GET /health` → public
+- All other endpoints require auth
 - Admin-only: POST/PUT/DELETE /workout-types
 - Users see only their own workouts (GET /workouts); admin can view any session via GET /workouts/{id}
 

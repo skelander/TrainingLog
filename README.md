@@ -55,6 +55,9 @@ Returns a single session. Owner or admin only.
 ### `DELETE /workouts/{id}`
 Deletes a session. Owner or admin only.
 
+### `GET /health`
+Public. Returns 200 OK if the service is up.
+
 ---
 
 ## Test accounts
@@ -64,6 +67,7 @@ Deletes a session. Owner or admin only.
 | `alice`  | `alice`  | user  |
 | `bob`    | `bob`    | user  |
 | `admin`  | `admin`  | admin |
+| `1`      | `1`      | user  |
 
 ---
 
