@@ -58,6 +58,39 @@
           </form>
         </div>
       </section>
+      <section id="users-section" class="card" hidden>
+        <h2>Users</h2>
+
+        <table id="users-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Role</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div id="user-form-section" hidden>
+          <h3 id="user-form-title">New User</h3>
+          <form id="user-form">
+            <input type="text" id="user-username" placeholder="Username" required>
+            <input type="password" id="user-password" placeholder="Password">
+            <small id="user-password-hint" hidden>Leave blank to keep current password</small>
+            <select id="user-role">
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+            </select>
+            <div class="form-actions">
+              <button type="submit" id="user-submit-btn">Create</button>
+              <button type="button" id="user-cancel-btn" class="secondary" hidden>Cancel</button>
+            </div>
+            <p id="user-error" class="error"></p>
+          </form>
+        </div>
+      </section>
+
       <section id="sessions-section" class="card">
         <h2>My Sessions</h2>
 

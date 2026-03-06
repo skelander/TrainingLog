@@ -17,6 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IWorkoutTypesService, WorkoutTypesService>();
 builder.Services.AddScoped<IWorkoutsService, WorkoutsService>();
+builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {

@@ -14,12 +14,12 @@ ASP.NET Core REST API for tracking workouts. Admins define workout types and the
 ## Project Structure
 ```
 TrainingLog/
-  Controllers/   AuthController, WorkoutTypesController, WorkoutsController, ValidateUserIdAttribute
+  Controllers/   AuthController, WorkoutTypesController, WorkoutsController, UsersController, ValidateUserIdAttribute
   Data/          AppDbContext
   Models/        User, WorkoutType, FieldDefinition, FieldType, WorkoutSession, FieldValue,
                  WorkoutTypeResponse, WorkoutSessionResponse, FieldDefResponse, FieldValueResponse
   Services/      IAuthService, AuthService, IWorkoutTypesService, WorkoutTypesService,
-                 IWorkoutsService, WorkoutsService, DomainException
+                 IWorkoutsService, WorkoutsService, IUsersService, UsersService, DomainException
 
 TrainingLog.Tests/
   AuthControllerTests.cs
@@ -50,8 +50,9 @@ TrainingLog.Tests/
 - `POST /auth/login` → JWT token
 - `GET /health` → public
 - All other endpoints require auth
-- Admin-only: POST/PUT/DELETE /workout-types
+- Admin-only: POST/PUT/DELETE /workout-types; all of GET/POST/PUT/DELETE /users
 - Users see only their own workouts (GET /workouts); admin can view any session via GET /workouts/{id}
+- Deleting a user cascade-deletes their workout sessions
 
 ## Code Style
 - C# primary constructors

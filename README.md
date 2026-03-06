@@ -56,6 +56,25 @@ Returns a single session. Owner or admin only.
 ### `DELETE /workouts/{id}`
 Deletes a session. Owner or admin only.
 
+### `GET /users` *(admin)*
+Returns all users (id, username, role — no password).
+
+### `GET /users/{id}` *(admin)*
+Returns a single user.
+
+### `POST /users` *(admin)*
+Creates a new user.
+```json
+{ "username": "carol", "password": "secret", "role": "user" }
+```
+Constraints: `username` 1–50 characters; `role` must be `"user"` or `"admin"`.
+
+### `PUT /users/{id}` *(admin)*
+Updates username, role, and optionally password. Omit or null `password` to keep it unchanged.
+
+### `DELETE /users/{id}` *(admin)*
+Deletes a user and all their workout sessions. Cannot delete your own account.
+
 ### `GET /health`
 Public. Returns 200 OK if the service is up.
 

@@ -9,6 +9,7 @@ let currentUser = localStorage.getItem(LS_USER);
 let currentRole = localStorage.getItem(LS_ROLE);
 let workoutTypes = [];
 let editingTypeId = null;
+let editingUserId = null;
 
 // ── Elements ──────────────────────────────────────────────
 
@@ -99,8 +100,12 @@ async function showApp() {
   typeFormSection.hidden = currentRole !== 'admin';
   const sessionsSection = document.getElementById('sessions-section');
   sessionsSection.hidden = currentRole === 'admin';
+  const usersSection = document.getElementById('users-section');
+  usersSection.hidden = currentRole !== 'admin';
   await loadWorkoutTypes();
-  if (currentRole !== 'admin') {
+  if (currentRole === 'admin') {
+    await loadUsers();
+  } else {
     setSessionDateDefault();
     populateSessionTypeSelect();
     await loadSessions();
@@ -397,6 +402,154 @@ function setSessionDateDefault() {
   const now = new Date();
   now.setSeconds(0, 0);
   document.getElementById('session-date').value = now.toISOString().slice(0, 16);
+}
+
+// ── Users ─────────────────────────────────────────────────
+
+const userFormSection = document.getElementById('user-form-section');
+const userFormTitle = document.getElementById('user-form-title');
+const userSubmitBtn = document.getElementById('user-submit-btn');
+const userCancelBtn = document.getElementById('user-cancel-btn');
+const userPasswordHint = document.getElementById('user-password-hint');
+
+async function loadUsers() {
+  const tbody = document.querySelector('#users-table tbody');
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Loading…</td></tr>';
+  let res;
+  try {
+    res = await api('/users');
+  } catch {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Could not reach server.</td></tr>';
+    return;
+  }
+  if (!res.ok) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="3">Error ${res.status} loading users.</td></tr>`;
+    return;
+  }
+  renderUsers(await res.json());
+  userFormSection.hidden = false;
+}
+
+function renderUsers(users) {
+  const tbody = document.querySelector('#users-table tbody');
+  tbody.innerHTML = '';
+  if (!users.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">No users.</td></tr>';
+    return;
+  }
+  for (const u of users) {
+    const tdUsername = document.createElement('td');
+    tdUsername.textContent = u.username;
+
+    const tdRole = document.createElement('td');
+    tdRole.textContent = u.role;
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'small secondary';
+    editBtn.dataset.action = 'edit';
+    editBtn.dataset.id = u.id;
+    editBtn.textContent = 'Edit';
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'small danger';
+    deleteBtn.dataset.action = 'delete';
+    deleteBtn.dataset.id = u.id;
+    deleteBtn.textContent = 'Delete';
+    const tdActions = document.createElement('td');
+    tdActions.className = 'td-actions';
+    tdActions.append(editBtn, deleteBtn);
+
+    const tr = document.createElement('tr');
+    tr.append(tdUsername, tdRole, tdActions);
+    tbody.appendChild(tr);
+  }
+}
+
+document.querySelector('#users-table tbody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = parseInt(btn.dataset.id);
+  if (btn.dataset.action === 'edit') editUser(id);
+  if (btn.dataset.action === 'delete') deleteUser(id);
+});
+
+function editUser(id) {
+  const tbody = document.querySelector('#users-table tbody');
+  const row = [...tbody.querySelectorAll('tr')].find(tr =>
+    tr.querySelector(`button[data-id="${id}"]`));
+  if (!row) return;
+  const [username, role] = [row.cells[0].textContent, row.cells[1].textContent];
+
+  editingUserId = id;
+  document.getElementById('user-username').value = username;
+  document.getElementById('user-password').value = '';
+  document.getElementById('user-role').value = role;
+  userFormTitle.textContent = `Edit: ${username}`;
+  userSubmitBtn.textContent = 'Save';
+  userCancelBtn.hidden = false;
+  userPasswordHint.hidden = false;
+  userFormSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function deleteUser(id) {
+  const tbody = document.querySelector('#users-table tbody');
+  const row = [...tbody.querySelectorAll('tr')].find(tr =>
+    tr.querySelector(`button[data-id="${id}"]`));
+  const username = row?.cells[0].textContent ?? id;
+  if (!confirm(`Delete user "${username}"? Their sessions will also be deleted.`)) return;
+  const res = await api(`/users/${id}`, { method: 'DELETE' });
+  if (res?.ok) {
+    if (editingUserId === id) resetUserForm();
+    await loadUsers();
+  } else if (res?.status === 400) {
+    const body = await res.json().catch(() => ({}));
+    alert(body.error ?? 'Cannot delete this user.');
+  }
+}
+
+userCancelBtn.addEventListener('click', resetUserForm);
+
+document.getElementById('user-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = document.getElementById('user-error');
+  err.textContent = '';
+
+  const username = document.getElementById('user-username').value.trim();
+  if (!username) { err.textContent = 'Username is required.'; return; }
+  if (username.length > 50) { err.textContent = 'Username must be at most 50 characters.'; return; }
+
+  const password = document.getElementById('user-password').value;
+  const role = document.getElementById('user-role').value;
+  const isEdit = editingUserId !== null;
+
+  if (!isEdit && !password) { err.textContent = 'Password is required.'; return; }
+
+  const body = isEdit
+    ? { username, password: password || null, role }
+    : { username, password, role };
+  const path = isEdit ? `/users/${editingUserId}` : '/users';
+  const res = await api(path, { method: isEdit ? 'PUT' : 'POST', body: JSON.stringify(body) });
+
+  if (res?.ok) {
+    resetUserForm();
+    await loadUsers();
+  } else if (res?.status === 409) {
+    const data = await res.json().catch(() => ({}));
+    err.textContent = data.error ?? 'Username already taken.';
+  } else {
+    err.textContent = `Error ${res?.status ?? '—'}: could not save user.`;
+  }
+});
+
+function resetUserForm() {
+  editingUserId = null;
+  document.getElementById('user-username').value = '';
+  document.getElementById('user-password').value = '';
+  document.getElementById('user-error').textContent = '';
+  document.getElementById('user-role').value = 'user';
+  userFormTitle.textContent = 'New User';
+  userSubmitBtn.textContent = 'Create';
+  userCancelBtn.hidden = true;
+  userPasswordHint.hidden = true;
 }
 
 // ── Init ──────────────────────────────────────────────────
