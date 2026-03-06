@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using TrainingLog.Data;
 using TrainingLog.Models;
@@ -33,13 +34,24 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
 
         if (values.Count > 0)
         {
-            var validFieldIds = (await db.FieldDefinitions
+            var fieldDefs = (await db.FieldDefinitions
                 .Where(f => f.WorkoutTypeId == workoutTypeId)
-                .Select(f => f.Id)
                 .ToListAsync())
-                .ToHashSet();
-            if (values.Any(v => !validFieldIds.Contains(v.FieldDefinitionId)))
+                .ToDictionary(f => f.Id);
+            if (values.Any(v => !fieldDefs.ContainsKey(v.FieldDefinitionId)))
                 throw new InvalidOperationException("One or more field definition IDs do not belong to the specified workout type.");
+            foreach (var v in values)
+            {
+                var def = fieldDefs[v.FieldDefinitionId];
+                var valid = def.Type switch
+                {
+                    FieldType.Number   => decimal.TryParse(v.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out _),
+                    FieldType.Duration => TimeSpan.TryParse(v.Value, out _),
+                    _                  => true,
+                };
+                if (!valid)
+                    throw new InvalidOperationException($"Value '{v.Value}' is not valid for field '{def.Name}' (expected {def.Type}).");
+            }
         }
 
         var session = new WorkoutSession
