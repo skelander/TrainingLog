@@ -205,5 +205,63 @@ public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>, IAsync
         Assert.True(session.UserId > 0);
     }
 
+    [Fact]
+    public async Task Create_WithTooLongFieldValue_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var running = types!.First(t => t.Name == "Running");
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", new
+        {
+            WorkoutTypeId = running.Id,
+            LoggedAt = DateTime.UtcNow,
+            Notes = (string?)null,
+            Values = new[] { new { FieldDefinitionId = running.Fields.First().Id, Value = new string('x', 501) } }
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithInvalidFieldDefinitionId_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var running = types!.First(t => t.Name == "Running");
+        var bjj = types!.First(t => t.Name == "BJJ");
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", new
+        {
+            WorkoutTypeId = running.Id,
+            LoggedAt = DateTime.UtcNow,
+            Notes = (string?)null,
+            Values = new[] { new { FieldDefinitionId = bjj.Fields.First().Id, Value = "5" } }
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithInvalidNumberValue_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var running = types!.First(t => t.Name == "Running");
+        var distanceField = running.Fields.First(f => f.Name == "Distance");
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", new
+        {
+            WorkoutTypeId = running.Id,
+            LoggedAt = DateTime.UtcNow,
+            Notes = (string?)null,
+            Values = new[] { new { FieldDefinitionId = distanceField.Id, Value = "not-a-number" } }
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_NonExistent_Returns404()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var res = await _client.WithToken(token).DeleteAsync("/workouts/99999");
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
+
     private record WorkoutSessionResponse(int Id, int UserId, string Username);
 }

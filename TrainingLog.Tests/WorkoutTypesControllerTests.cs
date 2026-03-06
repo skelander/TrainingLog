@@ -218,5 +218,60 @@ public class WorkoutTypesControllerTests : IClassFixture<TrainingLogFactory>, IA
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
     }
 
+    [Fact]
+    public async Task Delete_WithExistingSessions_Returns409()
+    {
+        var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
+
+        var created = await _client.WithToken(adminToken).PostAsJsonAsync("/workout-types", new
+        {
+            Name = "ToDeleteWithSessions",
+            Fields = Array.Empty<object>()
+        });
+        var type = await created.Content.ReadFromJsonAsync<WorkoutTypeResponse>();
+
+        await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", new
+        {
+            WorkoutTypeId = type!.Id,
+            LoggedAt = DateTime.UtcNow,
+            Notes = (string?)null,
+            Values = Array.Empty<object>()
+        });
+
+        var del = await _client.WithToken(adminToken).DeleteAsync($"/workout-types/{type.Id}");
+        Assert.Equal(HttpStatusCode.Conflict, del.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_WithExistingSessions_Returns409()
+    {
+        var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
+
+        var created = await _client.WithToken(adminToken).PostAsJsonAsync("/workout-types", new
+        {
+            Name = "ToUpdateWithSessions",
+            Fields = new[] { new { Name = "Reps", Type = 0, Unit = (string?)null } }
+        });
+        var type = await created.Content.ReadFromJsonAsync<WorkoutTypeResponse>();
+        var fieldId = ((System.Text.Json.JsonElement)type!.Fields.First()).GetProperty("id").GetInt32();
+
+        await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", new
+        {
+            WorkoutTypeId = type.Id,
+            LoggedAt = DateTime.UtcNow,
+            Notes = (string?)null,
+            Values = new[] { new { FieldDefinitionId = fieldId, Value = "10" } }
+        });
+
+        var res = await _client.WithToken(adminToken).PutAsJsonAsync($"/workout-types/{type.Id}", new
+        {
+            Name = "ToUpdateWithSessions",
+            Fields = new[] { new { Name = "Sets", Type = 0, Unit = (string?)null } }
+        });
+        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
+    }
+
     private record WorkoutTypeResponse(int Id, string Name, List<object> Fields);
 }
