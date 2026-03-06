@@ -57,5 +57,12 @@ public class AuthControllerTests : IClassFixture<TrainingLogFactory>
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
 
+    [Fact]
+    public async Task Login_WithTooLongPassword_Returns400()
+    {
+        var res = await _client.PostAsJsonAsync("/auth/login", new { Username = "admin", Password = new string('a', 73) });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
     private record LoginResponse(string User, string Role, string Token);
 }

@@ -284,6 +284,41 @@ public class UsersControllerTests : IClassFixture<TrainingLogFactory>, IAsyncLif
     }
 
     [Fact]
+    public async Task Create_WithTooLongPassword_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var res = await _client.WithToken(token).PostAsJsonAsync("/users", new
+        {
+            Username = "longpwtest",
+            Password = new string('a', 73),
+            Role = "user"
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_WithTooLongPassword_Returns400()
+    {
+        var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
+
+        var created = await _client.WithToken(adminToken).PostAsJsonAsync("/users", new
+        {
+            Username = "longpwupdate",
+            Password = "validpass",
+            Role = "user"
+        });
+        var user = await created.Content.ReadFromJsonAsync<UserResponse>();
+
+        var res = await _client.WithToken(adminToken).PutAsJsonAsync($"/users/{user!.Id}", new
+        {
+            Username = "longpwupdate",
+            Password = new string('a', 73),
+            Role = "user"
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
     public async Task Update_PasswordChange_NewPasswordWorks()
     {
         var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
