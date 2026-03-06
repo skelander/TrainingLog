@@ -29,8 +29,7 @@ public class WorkoutsController(IWorkoutsService service) : ControllerBase, IAct
     public async Task<IActionResult> GetById(int id)
     {
         var session = await service.GetByIdAsync(id);
-        if (session is null) return NotFound();
-        if (!IsAdmin && session.UserId != CurrentUserId) return Forbid();
+        if (session is null || (!IsAdmin && session.UserId != CurrentUserId)) return NotFound();
         return Ok(session);
     }
 
