@@ -111,7 +111,7 @@ public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>
     }
 
     [Fact]
-    public async Task Delete_OtherUsersSession_Returns403()
+    public async Task Delete_OtherUsersSession_ReturnsNotFound()
     {
         var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
         var bobToken = await Helpers.GetTokenAsync(_client, "bob", "bob");
@@ -120,7 +120,7 @@ public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>
         var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
 
         var res = await _client.WithToken(bobToken).DeleteAsync($"/workouts/{session!.Id}");
-        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
 
     [Fact]

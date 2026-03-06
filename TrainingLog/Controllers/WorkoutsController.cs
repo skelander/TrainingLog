@@ -66,7 +66,7 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
         return result switch
         {
             true => NoContent(),
-            false => Forbid(),
+            false => NotFound(),
             null => NotFound(),
         };
     }
