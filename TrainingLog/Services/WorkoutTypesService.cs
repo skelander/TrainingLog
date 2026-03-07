@@ -17,13 +17,17 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
 
     public async Task<WorkoutTypeResponse> CreateAsync(string name, List<FieldDefinitionRequest> fields, CancellationToken cancellationToken = default)
     {
+        if (await db.WorkoutTypes.AnyAsync(t => t.Name == name, cancellationToken))
+            throw new DomainException($"Workout type '{name}' already exists.");
+
         var type = new WorkoutType
         {
             Name = name,
             Fields = fields.Select(f => new FieldDefinition { Name = f.Name, Type = f.Type, Unit = f.Unit }).ToList()
         };
         db.WorkoutTypes.Add(type);
-        await db.SaveChangesAsync(cancellationToken);
+        try { await db.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateException) { throw new DomainException($"Workout type '{name}' already exists."); }
         return ToResponse(type);
     }
 
@@ -32,9 +36,12 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
         var type = await db.WorkoutTypes.Include(w => w.Fields).FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
         if (type is null) return null;
 
+        if (type.Name != name && await db.WorkoutTypes.AnyAsync(t => t.Name == name && t.Id != id, cancellationToken))
+            throw new DomainException($"Workout type '{name}' already exists.");
+
         type.Name = name;
         try { await db.SaveChangesAsync(cancellationToken); }
-        catch (DbUpdateException) { throw new DomainException("The resource was modified concurrently. Please retry."); }
+        catch (DbUpdateException) { throw new DomainException($"Workout type '{name}' already exists."); }
 
         var fieldIds = type.Fields.Select(f => f.Id).ToHashSet();
         if (await db.FieldValues.AnyAsync(v => fieldIds.Contains(v.FieldDefinitionId), cancellationToken))

@@ -10,6 +10,6 @@ public record WorkoutSessionResponse(
     string Username,
     int WorkoutTypeId,
     string WorkoutTypeName,
-    DateTime LoggedAt,
+    DateTimeOffset LoggedAt,
     string? Notes,
     List<FieldValueResponse> Values);

@@ -29,9 +29,17 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
         if (request.Fields == null)
             return BadRequest(new { error = "Fields is required." });
 
-        var type = await service.CreateAsync(request.Name, request.Fields, cancellationToken);
-        logger.LogInformation("Workout type {TypeId} ({Name}) created", type.Id, type.Name);
-        return CreatedAtAction(nameof(GetById), new { id = type.Id }, type);
+        try
+        {
+            var type = await service.CreateAsync(request.Name, request.Fields, cancellationToken);
+            logger.LogInformation("Workout type {TypeId} ({Name}) created", type.Id, type.Name);
+            return CreatedAtAction(nameof(GetById), new { id = type.Id }, type);
+        }
+        catch (DomainException ex)
+        {
+            logger.LogWarning("Cannot create workout type: {Reason}", ex.Message);
+            return Conflict(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]

@@ -13,8 +13,8 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
             .Include(s => s.WorkoutType)
             .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
             .Where(s => s.UserId == userId)
-            .OrderByDescending(s => s.LoggedAt)
             .ToListAsync(cancellationToken))
+            .OrderByDescending(s => s.LoggedAt)
             .Select(ToResponse)
             .ToList();
 

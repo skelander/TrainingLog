@@ -14,6 +14,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+        modelBuilder.Entity<User>().Property(u => u.Username).HasMaxLength(50);
+        modelBuilder.Entity<User>().Property(u => u.Password).HasMaxLength(60);
+
+        modelBuilder.Entity<WorkoutType>().HasIndex(t => t.Name).IsUnique();
+        modelBuilder.Entity<WorkoutType>().Property(t => t.Name).HasMaxLength(100);
 
         modelBuilder.Entity<WorkoutSession>()
             .HasOne(s => s.User)
@@ -26,6 +31,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(s => s.WorkoutTypeId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<WorkoutSession>()
+            .Property(s => s.Notes).HasMaxLength(1000);
 
         modelBuilder.Entity<FieldValue>()
             .HasOne(v => v.FieldDefinition)

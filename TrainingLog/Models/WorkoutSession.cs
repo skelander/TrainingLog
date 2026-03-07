@@ -7,7 +7,7 @@ public class WorkoutSession
     public User? User { get; set; }
     public int WorkoutTypeId { get; set; }
     public WorkoutType? WorkoutType { get; set; }
-    public DateTime LoggedAt { get; set; }
+    public DateTimeOffset LoggedAt { get; set; }
     public string? Notes { get; set; }
     public List<FieldValue> Values { get; set; } = [];
 }

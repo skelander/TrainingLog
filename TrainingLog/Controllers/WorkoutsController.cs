@@ -69,6 +69,6 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
 
 public record CreateWorkoutRequest(
     int WorkoutTypeId,
-    DateTime LoggedAt,
+    DateTimeOffset LoggedAt,
     string? Notes,
     List<TrainingLog.Services.FieldValueRequest> Values);

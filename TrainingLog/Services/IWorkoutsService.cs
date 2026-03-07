@@ -11,4 +11,4 @@ public interface IWorkoutsService
 }
 
 public record FieldValueRequest(int FieldDefinitionId, string Value);
-public record CreateSessionRequest(int UserId, int WorkoutTypeId, DateTime LoggedAt, string? Notes, List<FieldValueRequest> Values);
+public record CreateSessionRequest(int UserId, int WorkoutTypeId, DateTimeOffset LoggedAt, string? Notes, List<FieldValueRequest> Values);

@@ -273,6 +273,38 @@ public class WorkoutTypesControllerTests : IClassFixture<TrainingLogFactory>, IA
         Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
     }
 
+    [Fact]
+    public async Task Create_DuplicateWorkoutTypeName_Returns409()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workout-types", new
+        {
+            Name = "Running",
+            Fields = Array.Empty<object>()
+        });
+        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_DuplicateWorkoutTypeName_Returns409()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "admin", "admin");
+
+        var created = await _client.WithToken(token).PostAsJsonAsync("/workout-types", new
+        {
+            Name = "UniqueType",
+            Fields = Array.Empty<object>()
+        });
+        var body = await created.Content.ReadFromJsonAsync<WorkoutTypeResponse>();
+
+        var res = await _client.WithToken(token).PutAsJsonAsync($"/workout-types/{body!.Id}", new
+        {
+            Name = "Running",
+            Fields = Array.Empty<object>()
+        });
+        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
+    }
+
     private record FieldDefResponse(int Id, string Name, int Type, string? Unit);
     private record WorkoutTypeResponse(int Id, string Name, List<FieldDefResponse> Fields);
 }
