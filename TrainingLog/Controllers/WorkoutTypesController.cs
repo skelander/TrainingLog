@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TrainingLog.Services;
 
 namespace TrainingLog.Controllers;
@@ -26,9 +25,9 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
     public async Task<IActionResult> Create([FromBody] WorkoutTypeRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
-            return BadRequest("Name must be 1–100 characters.");
+            return BadRequest(new { error = "Name must be 1–100 characters." });
         if (request.Fields == null)
-            return BadRequest("Fields is required.");
+            return BadRequest(new { error = "Fields is required." });
 
         var type = await service.CreateAsync(request.Name, request.Fields, cancellationToken);
         logger.LogInformation("Workout type {TypeId} ({Name}) created", type.Id, type.Name);
@@ -40,9 +39,9 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
     public async Task<IActionResult> Update(int id, [FromBody] WorkoutTypeRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
-            return BadRequest("Name must be 1–100 characters.");
+            return BadRequest(new { error = "Name must be 1–100 characters." });
         if (request.Fields == null)
-            return BadRequest("Fields is required.");
+            return BadRequest(new { error = "Fields is required." });
 
         try
         {
@@ -55,10 +54,6 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
         {
             logger.LogWarning("Cannot update workout type {TypeId}: {Reason}", id, ex.Message);
             return Conflict(new { error = ex.Message });
-        }
-        catch (DbUpdateException)
-        {
-            return Conflict(new { error = "The resource was modified concurrently. Please retry." });
         }
     }
 

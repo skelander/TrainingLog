@@ -26,7 +26,8 @@ public class UsersService(AppDbContext db, IConfiguration config) : IUsersServic
 
         var user = new User { Username = req.Username, Password = Hash(req.Password), Role = req.Role };
         db.Users.Add(user);
-        await db.SaveChangesAsync(cancellationToken);
+        try { await db.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateException) { throw new DomainException("The resource was modified concurrently. Please retry."); }
         return ToResponse(user);
     }
 
@@ -44,7 +45,8 @@ public class UsersService(AppDbContext db, IConfiguration config) : IUsersServic
         if (!string.IsNullOrEmpty(req.Password))
             user.Password = Hash(req.Password);
 
-        await db.SaveChangesAsync(cancellationToken);
+        try { await db.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateException) { throw new DomainException("The resource was modified concurrently. Please retry."); }
         return ToResponse(user);
     }
 

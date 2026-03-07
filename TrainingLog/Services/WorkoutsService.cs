@@ -28,19 +28,19 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         return session is null ? null : ToResponse(session);
     }
 
-    public async Task<WorkoutSessionResponse?> CreateAsync(int userId, int workoutTypeId, DateTime loggedAt, string? notes, List<FieldValueRequest> values, CancellationToken cancellationToken = default)
+    public async Task<WorkoutSessionResponse?> CreateAsync(CreateSessionRequest request, CancellationToken cancellationToken = default)
     {
-        if (!await db.WorkoutTypes.AnyAsync(t => t.Id == workoutTypeId, cancellationToken)) return null;
+        if (!await db.WorkoutTypes.AnyAsync(t => t.Id == request.WorkoutTypeId, cancellationToken)) return null;
 
-        if (values.Count > 0)
+        if (request.Values.Count > 0)
         {
             var fieldDefs = (await db.FieldDefinitions
-                .Where(f => f.WorkoutTypeId == workoutTypeId)
+                .Where(f => f.WorkoutTypeId == request.WorkoutTypeId)
                 .ToListAsync(cancellationToken))
                 .ToDictionary(f => f.Id);
-            if (values.Any(v => !fieldDefs.ContainsKey(v.FieldDefinitionId)))
+            if (request.Values.Any(v => !fieldDefs.ContainsKey(v.FieldDefinitionId)))
                 throw new DomainException("One or more field definition IDs do not belong to the specified workout type.");
-            foreach (var v in values)
+            foreach (var v in request.Values)
             {
                 var def = fieldDefs[v.FieldDefinitionId];
                 var valid = def.Type switch
@@ -56,11 +56,11 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
 
         var session = new WorkoutSession
         {
-            UserId = userId,
-            WorkoutTypeId = workoutTypeId,
-            LoggedAt = loggedAt,
-            Notes = notes,
-            Values = values.Select(v => new FieldValue { FieldDefinitionId = v.FieldDefinitionId, Value = v.Value }).ToList()
+            UserId = request.UserId,
+            WorkoutTypeId = request.WorkoutTypeId,
+            LoggedAt = request.LoggedAt,
+            Notes = request.Notes,
+            Values = request.Values.Select(v => new FieldValue { FieldDefinitionId = v.FieldDefinitionId, Value = v.Value }).ToList()
         };
         db.WorkoutSessions.Add(session);
         await db.SaveChangesAsync(cancellationToken);

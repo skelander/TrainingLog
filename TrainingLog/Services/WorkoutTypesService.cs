@@ -33,6 +33,8 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
         if (type is null) return null;
 
         type.Name = name;
+        try { await db.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateException) { throw new DomainException("The resource was modified concurrently. Please retry."); }
 
         var fieldIds = type.Fields.Select(f => f.Id).ToHashSet();
         if (await db.FieldValues.AnyAsync(v => fieldIds.Contains(v.FieldDefinitionId), cancellationToken))
@@ -41,7 +43,8 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
 
         db.FieldDefinitions.RemoveRange(type.Fields);
         type.Fields = fields.Select(f => new FieldDefinition { Name = f.Name, Type = f.Type, Unit = f.Unit, WorkoutTypeId = id }).ToList();
-        await db.SaveChangesAsync(cancellationToken);
+        try { await db.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateException) { throw new DomainException("The resource was modified concurrently. Please retry."); }
         return ToResponse(type);
     }
 

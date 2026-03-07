@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TrainingLog.Services;
 
 namespace TrainingLog.Controllers;
@@ -28,13 +27,13 @@ public class UsersController(IUsersService service, ILogger<UsersController> log
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length > 50)
-            return BadRequest("Username must be 1–50 characters.");
+            return BadRequest(new { error = "Username must be 1–50 characters." });
         if (string.IsNullOrEmpty(request.Password))
-            return BadRequest("Password is required.");
+            return BadRequest(new { error = "Password is required." });
         if (request.Password.Length > 72)
-            return BadRequest("Password must be at most 72 characters.");
+            return BadRequest(new { error = "Password must be at most 72 characters." });
         if (request.Role is not "user" and not "admin")
-            return BadRequest("Role must be 'user' or 'admin'.");
+            return BadRequest(new { error = "Role must be 'user' or 'admin'." });
 
         try
         {
@@ -47,21 +46,17 @@ public class UsersController(IUsersService service, ILogger<UsersController> log
             logger.LogWarning("Create user failed: {Reason}", ex.Message);
             return Conflict(new { error = ex.Message });
         }
-        catch (DbUpdateException)
-        {
-            return Conflict(new { error = "The resource was modified concurrently. Please retry." });
-        }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length > 50)
-            return BadRequest("Username must be 1–50 characters.");
+            return BadRequest(new { error = "Username must be 1–50 characters." });
         if (request.Role is not "user" and not "admin")
-            return BadRequest("Role must be 'user' or 'admin'.");
+            return BadRequest(new { error = "Role must be 'user' or 'admin'." });
         if (!string.IsNullOrEmpty(request.Password) && request.Password.Length > 72)
-            return BadRequest("Password must be at most 72 characters.");
+            return BadRequest(new { error = "Password must be at most 72 characters." });
 
         try
         {
@@ -74,17 +69,13 @@ public class UsersController(IUsersService service, ILogger<UsersController> log
         {
             return Conflict(new { error = ex.Message });
         }
-        catch (DbUpdateException)
-        {
-            return Conflict(new { error = "The resource was modified concurrently. Please retry." });
-        }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         if (id == CurrentUserId)
-            return BadRequest("Cannot delete your own account.");
+            return BadRequest(new { error = "Cannot delete your own account." });
 
         var result = await service.DeleteAsync(id, cancellationToken);
         if (result)

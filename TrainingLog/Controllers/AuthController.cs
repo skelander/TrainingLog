@@ -17,9 +17,9 @@ public class AuthController(IAuthService auth, IConfiguration config, ILogger<Au
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
-            return BadRequest("Username and password are required.");
+            return BadRequest(new { error = "Username and password are required." });
         if (request.Password.Length > 72)
-            return BadRequest("Password must be at most 72 characters.");
+            return BadRequest(new { error = "Password must be at most 72 characters." });
 
         var result = await auth.AuthenticateAsync(request.Username, request.Password, cancellationToken);
         if (result is null)

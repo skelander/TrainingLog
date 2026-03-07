@@ -255,7 +255,7 @@ public class WorkoutTypesControllerTests : IClassFixture<TrainingLogFactory>, IA
             Fields = new[] { new { Name = "Reps", Type = 0, Unit = (string?)null } }
         });
         var type = await created.Content.ReadFromJsonAsync<WorkoutTypeResponse>();
-        var fieldId = ((System.Text.Json.JsonElement)type!.Fields.First()).GetProperty("id").GetInt32();
+        var fieldId = type!.Fields.First().Id;
 
         await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", new
         {
@@ -273,5 +273,6 @@ public class WorkoutTypesControllerTests : IClassFixture<TrainingLogFactory>, IA
         Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
     }
 
-    private record WorkoutTypeResponse(int Id, string Name, List<object> Fields);
+    private record FieldDefResponse(int Id, string Name, int Type, string? Unit);
+    private record WorkoutTypeResponse(int Id, string Name, List<FieldDefResponse> Fields);
 }
