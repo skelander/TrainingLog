@@ -232,6 +232,9 @@ document.getElementById('type-form').addEventListener('submit', async e => {
   if (res?.ok) {
     resetTypeForm();
     await loadWorkoutTypes();
+  } else if (res?.status === 409) {
+    const data = await res.json().catch(() => ({}));
+    err.textContent = data.error ?? 'Name already taken.';
   } else {
     err.textContent = `Error ${res?.status ?? '—'}: could not save workout type.`;
   }

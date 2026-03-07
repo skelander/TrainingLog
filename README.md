@@ -20,14 +20,14 @@ Returns all workout types with their field definitions. Requires JWT.
 Returns a single workout type. Requires JWT.
 
 ### `POST /workout-types` *(admin)*
-Creates a new workout type.
+Creates a new workout type. Returns 409 if the name is already taken.
 ```json
 { "name": "Swimming", "fields": [{ "name": "Laps", "type": 0, "unit": null }] }
 ```
 Field types: `0` = Number, `1` = Text, `2` = Duration
 
 ### `PUT /workout-types/{id}` *(admin)*
-Replaces a workout type's name and fields.
+Replaces a workout type's name and fields. Returns 409 if the new name is already taken, or if existing sessions have logged values for this type.
 
 ### `DELETE /workout-types/{id}` *(admin)*
 Deletes a workout type.
