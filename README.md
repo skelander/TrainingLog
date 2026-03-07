@@ -67,10 +67,10 @@ Creates a new user.
 ```json
 { "username": "carol", "password": "secret", "role": "user" }
 ```
-Constraints: `username` 1–50 characters; `role` must be `"user"` or `"admin"`.
+Constraints: `username` 1–50 characters; `password` required, max 72 characters; `role` must be `"user"` or `"admin"`.
 
 ### `PUT /users/{id}` *(admin)*
-Updates username, role, and optionally password. Omit or null `password` to keep it unchanged.
+Updates username, role, and optionally password. Omit or null `password` to keep it unchanged; max 72 characters if provided.
 
 ### `DELETE /users/{id}` *(admin)*
 Deletes a user and all their workout sessions. Cannot delete your own account.

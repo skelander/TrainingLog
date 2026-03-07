@@ -25,6 +25,7 @@ TrainingLog.Tests/
   AuthControllerTests.cs
   WorkoutTypesControllerTests.cs
   WorkoutsControllerTests.cs
+  UsersControllerTests.cs
   Helpers.cs              GetTokenAsync, WithToken extension
   TrainingLogFactory.cs   WebApplicationFactory subclass (SQLite in-memory, JWT test key, rate limit override, BCrypt work factor = 4)
 ```
