@@ -264,4 +264,99 @@ public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>, IAsync
     }
 
     private record WorkoutSessionResponse(int Id, int UserId, string Username);
+    private record SessionDetail(int Id, string? Notes);
+
+    [Fact]
+    public async Task Update_AsOwner_ReturnsOk()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var created = await _client.WithToken(token).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, token));
+        var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var distanceField = types!.First(t => t.Name == "Running").Fields.First();
+
+        var res = await _client.WithToken(token).PutAsJsonAsync($"/workouts/{session!.Id}", new
+        {
+            LoggedAt = DateTimeOffset.UtcNow,
+            Notes = "Updated notes",
+            Values = new[] { new { FieldDefinitionId = distanceField.Id, Value = "10" } }
+        });
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var updated = await res.Content.ReadFromJsonAsync<SessionDetail>();
+        Assert.Equal("Updated notes", updated!.Notes);
+    }
+
+    [Fact]
+    public async Task Update_AsAdmin_ReturnsOk()
+    {
+        var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, aliceToken));
+        var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
+
+        var res = await _client.WithToken(adminToken).PutAsJsonAsync($"/workouts/{session!.Id}", new
+        {
+            LoggedAt = DateTimeOffset.UtcNow,
+            Notes = "Admin updated",
+            Values = Array.Empty<object>()
+        });
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_AsOtherUser_ReturnsNotFound()
+    {
+        var aliceToken = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var bobToken   = await Helpers.GetTokenAsync(_client, "bob",   "bob");
+        var created = await _client.WithToken(aliceToken).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, aliceToken));
+        var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
+
+        var res = await _client.WithToken(bobToken).PutAsJsonAsync($"/workouts/{session!.Id}", new
+        {
+            LoggedAt = DateTimeOffset.UtcNow,
+            Notes = (string?)null,
+            Values = Array.Empty<object>()
+        });
+
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_WithoutToken_Returns401()
+    {
+        var res = await _client.PutAsJsonAsync("/workouts/1", new { });
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_NonExistent_ReturnsNotFound()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var res = await _client.WithToken(token).PutAsJsonAsync("/workouts/99999", new
+        {
+            LoggedAt = DateTimeOffset.UtcNow,
+            Notes = (string?)null,
+            Values = Array.Empty<object>()
+        });
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_TooLongNotes_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var created = await _client.WithToken(token).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, token));
+        var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
+
+        var res = await _client.WithToken(token).PutAsJsonAsync($"/workouts/{session!.Id}", new
+        {
+            LoggedAt = DateTimeOffset.UtcNow,
+            Notes = new string('x', 1001),
+            Values = Array.Empty<object>()
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
 }

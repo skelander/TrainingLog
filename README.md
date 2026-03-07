@@ -53,6 +53,19 @@ Constraints: `notes` ≤ 1000 characters; each `value` ≤ 500 characters.
 ### `GET /workouts/{id}`
 Returns a single session. Owner or admin only.
 
+### `PUT /workouts/{id}`
+Updates a session's date, notes, and field values. Workout type cannot be changed. Owner or admin only.
+```json
+{
+  "loggedAt": "2026-03-05T09:00:00Z",
+  "notes": "Felt even better",
+  "values": [
+    { "fieldDefinitionId": 1, "value": "6.0" },
+    { "fieldDefinitionId": 2, "value": "30:00" }
+  ]
+}
+```
+
 ### `DELETE /workouts/{id}`
 Deletes a session. Owner or admin only.
 

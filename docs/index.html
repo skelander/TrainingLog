@@ -108,7 +108,7 @@
         </table>
 
         <div id="session-form-section">
-          <h3>Log Session</h3>
+          <h3 id="session-form-title">Log Session</h3>
           <form id="session-form">
             <input type="datetime-local" id="session-date" required>
             <select id="session-type" required>
@@ -116,7 +116,10 @@
             </select>
             <div id="session-fields"></div>
             <input type="text" id="session-notes" placeholder="Notes (optional)">
-            <button type="submit">Log session</button>
+            <div class="form-actions">
+              <button type="submit" id="session-submit-btn">Log session</button>
+              <button type="button" id="session-cancel-btn" class="secondary" hidden>Cancel</button>
+            </div>
             <p id="session-error" class="error"></p>
           </form>
         </div>

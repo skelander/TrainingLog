@@ -8,7 +8,9 @@ let token = localStorage.getItem(LS_TOKEN);
 let currentUser = localStorage.getItem(LS_USER);
 let currentRole = localStorage.getItem(LS_ROLE);
 let workoutTypes = [];
+let sessions = [];
 let editingTypeId = null;
+let editingSessionId = null;
 let editingUserId = null;
 
 // ── Elements ──────────────────────────────────────────────
@@ -290,7 +292,8 @@ async function loadSessions() {
     tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Error ${res.status}.</td></tr>`;
     return;
   }
-  renderSessions(await res.json());
+  sessions = await res.json();
+  renderSessions(sessions);
 }
 
 function renderSessions(sessions) {
@@ -315,6 +318,11 @@ function renderSessions(sessions) {
     const tdNotes = document.createElement('td');
     tdNotes.textContent = s.notes || '—';
 
+    const editBtn = document.createElement('button');
+    editBtn.className = 'small secondary';
+    editBtn.dataset.action = 'edit';
+    editBtn.dataset.id = s.id;
+    editBtn.textContent = 'Edit';
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'small danger';
     deleteBtn.dataset.action = 'delete';
@@ -322,7 +330,7 @@ function renderSessions(sessions) {
     deleteBtn.textContent = 'Delete';
     const tdActions = document.createElement('td');
     tdActions.className = 'td-actions';
-    tdActions.appendChild(deleteBtn);
+    tdActions.append(editBtn, deleteBtn);
 
     const tr = document.createElement('tr');
     tr.append(tdDate, tdType, tdValues, tdNotes, tdActions);
@@ -331,11 +339,18 @@ function renderSessions(sessions) {
 }
 
 document.querySelector('#sessions-table tbody').addEventListener('click', async e => {
-  const btn = e.target.closest('button[data-action="delete"]');
+  const btn = e.target.closest('button[data-action]');
   if (!btn) return;
-  if (!confirm('Delete this session?')) return;
-  const res = await api(`/workouts/${parseInt(btn.dataset.id)}`, { method: 'DELETE' });
-  if (res?.ok) await loadSessions();
+  const id = parseInt(btn.dataset.id);
+  if (btn.dataset.action === 'edit') editSession(id);
+  if (btn.dataset.action === 'delete') {
+    if (!confirm('Delete this session?')) return;
+    const res = await api(`/workouts/${id}`, { method: 'DELETE' });
+    if (res?.ok) {
+      if (editingSessionId === id) resetSessionForm();
+      await loadSessions();
+    }
+  }
 })
 
 function populateSessionTypeSelect() {
@@ -387,17 +402,19 @@ document.getElementById('session-form').addEventListener('submit', async e => {
     fieldDefinitionId: parseInt(inp.dataset.fieldId),
     value: inp.value,
   }));
-  const res = await api('/workouts', {
-    method: 'POST',
-    body: JSON.stringify({ workoutTypeId: typeId, loggedAt, notes, values }),
-  });
+
+  const isEdit = editingSessionId !== null;
+  const path = isEdit ? `/workouts/${editingSessionId}` : '/workouts';
+  const body = isEdit
+    ? { loggedAt, notes, values }
+    : { workoutTypeId: typeId, loggedAt, notes, values };
+  const res = await api(path, { method: isEdit ? 'PUT' : 'POST', body: JSON.stringify(body) });
+
   if (res?.ok) {
-    e.target.reset();
-    document.getElementById('session-fields').innerHTML = '';
-    setSessionDateDefault();
+    resetSessionForm();
     await loadSessions();
   } else {
-    err.textContent = `Error ${res?.status ?? '—'}: could not log session.`;
+    err.textContent = `Error ${res?.status ?? '—'}: could not ${isEdit ? 'update' : 'log'} session.`;
   }
 });
 
@@ -405,6 +422,69 @@ function setSessionDateDefault() {
   const now = new Date();
   now.setSeconds(0, 0);
   document.getElementById('session-date').value = now.toISOString().slice(0, 16);
+}
+
+const sessionFormTitle  = document.getElementById('session-form-title');
+const sessionSubmitBtn  = document.getElementById('session-submit-btn');
+const sessionCancelBtn  = document.getElementById('session-cancel-btn');
+const sessionTypeSelect = document.getElementById('session-type');
+
+document.getElementById('session-cancel-btn').addEventListener('click', resetSessionForm);
+
+function editSession(id) {
+  const s = sessions.find(s => s.id === id);
+  if (!s) return;
+
+  editingSessionId = id;
+
+  const dt = new Date(s.loggedAt);
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('session-date').value =
+    `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+
+  sessionTypeSelect.value = s.workoutTypeId;
+  sessionTypeSelect.disabled = true;
+
+  // Rebuild field inputs for this type, then fill values
+  const type = workoutTypes.find(t => t.id === s.workoutTypeId);
+  const container = document.getElementById('session-fields');
+  container.innerHTML = '';
+  if (type) {
+    for (const f of type.fields) {
+      const label = document.createElement('label');
+      label.className = 'session-field-label';
+      const span = document.createElement('span');
+      span.textContent = f.unit ? `${f.name} (${f.unit})` : f.name;
+      const input = document.createElement('input');
+      input.type = f.type === 0 ? 'number' : 'text';
+      input.className = 'session-field-value';
+      input.dataset.fieldId = f.id;
+      input.placeholder = FIELD_TYPES[f.type] ?? 'Value';
+      const existing = s.values.find(v => v.fieldDefinitionId === f.id);
+      input.value = existing?.value ?? '';
+      label.appendChild(span);
+      label.appendChild(input);
+      container.appendChild(label);
+    }
+  }
+
+  document.getElementById('session-notes').value = s.notes ?? '';
+  sessionFormTitle.textContent = `Edit Session`;
+  sessionSubmitBtn.textContent = 'Save';
+  sessionCancelBtn.hidden = false;
+  document.getElementById('session-form-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetSessionForm() {
+  editingSessionId = null;
+  document.getElementById('session-form').reset();
+  document.getElementById('session-fields').innerHTML = '';
+  document.getElementById('session-error').textContent = '';
+  sessionTypeSelect.disabled = false;
+  sessionFormTitle.textContent = 'Log Session';
+  sessionSubmitBtn.textContent = 'Log session';
+  sessionCancelBtn.hidden = true;
+  setSessionDateDefault();
 }
 
 // ── Users ─────────────────────────────────────────────────

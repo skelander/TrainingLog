@@ -70,6 +70,47 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         return ToResponse(session);
     }
 
+    public async Task<WorkoutSessionResponse?> UpdateAsync(int id, int userId, bool isAdmin, UpdateSessionRequest request, CancellationToken cancellationToken = default)
+    {
+        var session = await db.WorkoutSessions
+            .Include(s => s.Values)
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        if (session is null) return null;
+        if (!isAdmin && session.UserId != userId) return null;
+
+        if (request.Values.Count > 0)
+        {
+            var fieldDefs = (await db.FieldDefinitions
+                .Where(f => f.WorkoutTypeId == session.WorkoutTypeId)
+                .ToListAsync(cancellationToken))
+                .ToDictionary(f => f.Id);
+            if (request.Values.Any(v => !fieldDefs.ContainsKey(v.FieldDefinitionId)))
+                throw new DomainException("One or more field definition IDs do not belong to the specified workout type.");
+            foreach (var v in request.Values)
+            {
+                var def = fieldDefs[v.FieldDefinitionId];
+                var valid = def.Type switch
+                {
+                    FieldType.Number   => decimal.TryParse(v.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out _),
+                    FieldType.Duration => TimeSpan.TryParse(v.Value, out _),
+                    _                  => true,
+                };
+                if (!valid)
+                    throw new DomainException($"Value '{v.Value}' is not valid for field '{def.Name}' (expected {def.Type}).");
+            }
+        }
+
+        db.FieldValues.RemoveRange(session.Values);
+        session.LoggedAt = request.LoggedAt;
+        session.Notes = request.Notes;
+        session.Values = request.Values.Select(v => new FieldValue { FieldDefinitionId = v.FieldDefinitionId, Value = v.Value }).ToList();
+        await db.SaveChangesAsync(cancellationToken);
+        await db.Entry(session).Reference(s => s.User).LoadAsync(cancellationToken);
+        await db.Entry(session).Reference(s => s.WorkoutType).LoadAsync(cancellationToken);
+        await db.Entry(session).Collection(s => s.Values).Query().Include(v => v.FieldDefinition).LoadAsync(cancellationToken);
+        return ToResponse(session);
+    }
+
     public async Task<bool?> DeleteAsync(int id, int userId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var session = await db.WorkoutSessions.FindAsync(new object?[] { id }, cancellationToken);

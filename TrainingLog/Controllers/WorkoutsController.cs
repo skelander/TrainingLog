@@ -52,6 +52,31 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
         }
     }
 
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateWorkoutRequest request, CancellationToken cancellationToken)
+    {
+        if (request.Values == null)
+            return BadRequest(new { error = "Values is required." });
+        if (request.Notes?.Length > 1000)
+            return BadRequest(new { error = "Notes must be at most 1000 characters." });
+        if (request.Values.Any(v => v.Value.Length > 500))
+            return BadRequest(new { error = "Field values must be at most 500 characters." });
+
+        try
+        {
+            var session = await service.UpdateAsync(id, CurrentUserId, IsAdmin,
+                new UpdateSessionRequest(request.LoggedAt, request.Notes, request.Values), cancellationToken);
+            if (session is null) return NotFound();
+            logger.LogInformation("User {UserId} updated workout session {SessionId}", CurrentUserId, id);
+            return Ok(session);
+        }
+        catch (DomainException ex)
+        {
+            logger.LogWarning("Update workout failed for user {UserId}: {Reason}", CurrentUserId, ex.Message);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
@@ -69,6 +94,11 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
 
 public record CreateWorkoutRequest(
     int WorkoutTypeId,
+    DateTimeOffset LoggedAt,
+    string? Notes,
+    List<TrainingLog.Services.FieldValueRequest> Values);
+
+public record UpdateWorkoutRequest(
     DateTimeOffset LoggedAt,
     string? Notes,
     List<TrainingLog.Services.FieldValueRequest> Values);
