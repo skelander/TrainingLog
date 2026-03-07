@@ -66,12 +66,7 @@ document.getElementById('login-form').addEventListener('submit', async e => {
       return;
     }
 
-    if (!res.ok) {
-      err.textContent = res.status === 401
-        ? 'Invalid username or password.'
-        : (await res.text()) || 'Login failed. Please try again.';
-      return;
-    }
+    if (!res.ok) { err.textContent = 'Invalid username or password.'; return; }
 
     const data = await res.json();
     token = data.token;
