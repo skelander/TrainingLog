@@ -297,6 +297,22 @@ public class UsersControllerTests : IClassFixture<TrainingLogFactory>, IAsyncLif
     }
 
     [Fact]
+    public async Task Update_WithInvalidRole_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "admin", "admin");
+        var users = await _client.WithToken(token).GetFromJsonAsync<List<UserResponse>>("/users");
+        var alice = users!.First(u => u.Username == "alice");
+
+        var res = await _client.WithToken(token).PutAsJsonAsync($"/users/{alice.Id}", new
+        {
+            Username = "alice",
+            Password = (string?)null,
+            Role = "superuser"
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
     public async Task Update_WithTooLongPassword_Returns400()
     {
         var adminToken = await Helpers.GetTokenAsync(_client, "admin", "admin");

@@ -64,5 +64,12 @@ public class AuthControllerTests : IClassFixture<TrainingLogFactory>
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
 
+    [Fact]
+    public async Task Health_ReturnsOk()
+    {
+        var res = await _client.GetAsync("/health");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+    }
+
     private record LoginResponse(string User, string Role, string Token);
 }
