@@ -39,19 +39,25 @@ public class WorkoutTypesService(AppDbContext db) : IWorkoutTypesService
         if (type.Name != name && await db.WorkoutTypes.AnyAsync(t => t.Name == name && t.Id != id, cancellationToken))
             throw new DomainException($"Workout type '{name}' already exists.");
 
-        type.Name = name;
-        try { await db.SaveChangesAsync(cancellationToken); }
-        catch (DbUpdateException) { throw new DomainException($"Workout type '{name}' already exists."); }
-
         var fieldIds = type.Fields.Select(f => f.Id).ToHashSet();
         if (await db.FieldValues.AnyAsync(v => fieldIds.Contains(v.FieldDefinitionId), cancellationToken))
             throw new DomainException(
                 "Cannot update fields: existing workout sessions have logged values for this type. Delete those sessions first.");
 
-        db.FieldDefinitions.RemoveRange(type.Fields);
-        type.Fields = fields.Select(f => new FieldDefinition { Name = f.Name, Type = f.Type, Unit = f.Unit, WorkoutTypeId = id }).ToList();
-        try { await db.SaveChangesAsync(cancellationToken); }
-        catch (DbUpdateException) { throw new DomainException("The resource was modified concurrently. Please retry."); }
+        await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            type.Name = name;
+            db.FieldDefinitions.RemoveRange(type.Fields);
+            type.Fields = fields.Select(f => new FieldDefinition { Name = f.Name, Type = f.Type, Unit = f.Unit, WorkoutTypeId = id }).ToList();
+            await db.SaveChangesAsync(cancellationToken);
+            await tx.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw new DomainException($"Workout type '{name}' already exists.");
+        }
         return ToResponse(type);
     }
 

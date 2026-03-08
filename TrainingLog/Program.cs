@@ -79,7 +79,7 @@ using (var scope = app.Services.CreateScope())
 
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
-    if (!db.Users.Any())
+    if (!app.Environment.IsProduction() && !db.Users.Any())
     {
         var workFactor = config.GetValue<int>("BCrypt:WorkFactor", 11);
         string Hash(string pw) => BCrypt.Net.BCrypt.HashPassword(pw, workFactor);
@@ -89,6 +89,9 @@ using (var scope = app.Services.CreateScope())
             new User { Username = "admin", Password = Hash("admin"), Role = "admin" },
             new User { Username = "1",     Password = Hash("1"),     Role = "user" }
         );
+    }
+    if (!db.WorkoutTypes.Any())
+    {
         db.WorkoutTypes.AddRange(
             new WorkoutType
             {
@@ -110,8 +113,8 @@ using (var scope = app.Services.CreateScope())
                 ]
             }
         );
-        db.SaveChanges();
     }
+    db.SaveChanges();
 }
 
 if (app.Environment.IsDevelopment())
