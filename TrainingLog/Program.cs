@@ -21,8 +21,9 @@ builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
     options.AddPolicy("GitHubPages", policy =>
-        policy.WithOrigins("https://skelander.github.io")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader());
 });
