@@ -7,11 +7,14 @@ namespace TrainingLog.Services;
 
 public class WorkoutsService(AppDbContext db) : IWorkoutsService
 {
-    public async Task<List<WorkoutSessionResponse>> GetForUserAsync(int userId, CancellationToken cancellationToken = default) =>
-        (await db.WorkoutSessions
+    private IQueryable<WorkoutSession> SessionQuery() =>
+        db.WorkoutSessions
             .Include(s => s.User)
             .Include(s => s.WorkoutType)
-            .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
+            .Include(s => s.Values).ThenInclude(v => v.FieldDefinition);
+
+    public async Task<List<WorkoutSessionResponse>> GetForUserAsync(int userId, CancellationToken cancellationToken = default) =>
+        (await SessionQuery()
             .Where(s => s.UserId == userId)
             .ToListAsync(cancellationToken))
             .OrderByDescending(s => s.LoggedAt)
@@ -20,11 +23,7 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
 
     public async Task<WorkoutSessionResponse?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        var session = await db.WorkoutSessions
-            .Include(s => s.User)
-            .Include(s => s.WorkoutType)
-            .Include(s => s.Values).ThenInclude(v => v.FieldDefinition)
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        var session = await SessionQuery().FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
         return session is null ? null : ToResponse(session);
     }
 
@@ -44,10 +43,7 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         };
         db.WorkoutSessions.Add(session);
         await db.SaveChangesAsync(cancellationToken);
-        await db.Entry(session).Reference(s => s.User).LoadAsync(cancellationToken);
-        await db.Entry(session).Reference(s => s.WorkoutType).LoadAsync(cancellationToken);
-        await db.Entry(session).Collection(s => s.Values).Query().Include(v => v.FieldDefinition).LoadAsync(cancellationToken);
-        return ToResponse(session);
+        return ToResponse(await SessionQuery().FirstAsync(s => s.Id == session.Id, cancellationToken));
     }
 
     public async Task<WorkoutSessionResponse?> UpdateAsync(int id, int userId, bool isAdmin, UpdateSessionRequest request, CancellationToken cancellationToken = default)
@@ -65,10 +61,7 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         session.Notes = request.Notes;
         session.Values = request.Values.Select(v => new FieldValue { FieldDefinitionId = v.FieldDefinitionId, Value = v.Value }).ToList();
         await db.SaveChangesAsync(cancellationToken);
-        await db.Entry(session).Reference(s => s.User).LoadAsync(cancellationToken);
-        await db.Entry(session).Reference(s => s.WorkoutType).LoadAsync(cancellationToken);
-        await db.Entry(session).Collection(s => s.Values).Query().Include(v => v.FieldDefinition).LoadAsync(cancellationToken);
-        return ToResponse(session);
+        return ToResponse(await SessionQuery().FirstAsync(s => s.Id == id, cancellationToken));
     }
 
     public async Task<bool?> DeleteAsync(int id, int userId, bool isAdmin, CancellationToken cancellationToken = default)

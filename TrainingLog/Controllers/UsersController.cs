@@ -26,12 +26,12 @@ public class UsersController(IUsersService service, ILogger<UsersController> log
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length > 50)
-            return BadRequest(new { error = "Username must be 1–50 characters." });
+        if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length > Limits.UsernameMaxLength)
+            return BadRequest(new { error = $"Username must be 1–{Limits.UsernameMaxLength} characters." });
         if (string.IsNullOrEmpty(request.Password))
             return BadRequest(new { error = "Password is required." });
-        if (request.Password.Length > 72)
-            return BadRequest(new { error = "Password must be at most 72 characters." });
+        if (request.Password.Length > Limits.PasswordMaxLength)
+            return BadRequest(new { error = $"Password must be at most {Limits.PasswordMaxLength} characters." });
         if (request.Role is not "user" and not "admin")
             return BadRequest(new { error = "Role must be 'user' or 'admin'." });
 
@@ -51,12 +51,12 @@ public class UsersController(IUsersService service, ILogger<UsersController> log
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length > 50)
-            return BadRequest(new { error = "Username must be 1–50 characters." });
+        if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length > Limits.UsernameMaxLength)
+            return BadRequest(new { error = $"Username must be 1–{Limits.UsernameMaxLength} characters." });
         if (request.Role is not "user" and not "admin")
             return BadRequest(new { error = "Role must be 'user' or 'admin'." });
-        if (!string.IsNullOrEmpty(request.Password) && request.Password.Length > 72)
-            return BadRequest(new { error = "Password must be at most 72 characters." });
+        if (!string.IsNullOrEmpty(request.Password) && request.Password.Length > Limits.PasswordMaxLength)
+            return BadRequest(new { error = $"Password must be at most {Limits.PasswordMaxLength} characters." });
 
         try
         {

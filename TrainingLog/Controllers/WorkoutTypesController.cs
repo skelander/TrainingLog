@@ -24,8 +24,8 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> Create([FromBody] WorkoutTypeRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
-            return BadRequest(new { error = "Name must be 1–100 characters." });
+        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > Limits.WorkoutTypeNameMaxLength)
+            return BadRequest(new { error = $"Name must be 1–{Limits.WorkoutTypeNameMaxLength} characters." });
         if (request.Fields == null)
             return BadRequest(new { error = "Fields is required." });
 
@@ -46,8 +46,8 @@ public class WorkoutTypesController(IWorkoutTypesService service, ILogger<Workou
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> Update(int id, [FromBody] WorkoutTypeRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 100)
-            return BadRequest(new { error = "Name must be 1–100 characters." });
+        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > Limits.WorkoutTypeNameMaxLength)
+            return BadRequest(new { error = $"Name must be 1–{Limits.WorkoutTypeNameMaxLength} characters." });
         if (request.Fields == null)
             return BadRequest(new { error = "Fields is required." });
 

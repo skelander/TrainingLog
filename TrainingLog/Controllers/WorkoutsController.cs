@@ -33,10 +33,8 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
             return BadRequest(new { error = "WorkoutTypeId must be a positive integer." });
         if (request.Values == null)
             return BadRequest(new { error = "Values is required." });
-        if (request.Notes?.Length > 1000)
-            return BadRequest(new { error = "Notes must be at most 1000 characters." });
-        if (request.Values.Any(v => v.Value is null || v.Value.Length > 500))
-            return BadRequest(new { error = "Field values must be at most 500 characters." });
+        if (ValidateWorkoutFields(request.Notes, request.Values) is { } error)
+            return BadRequest(new { error });
 
         try
         {
@@ -57,10 +55,8 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
     {
         if (request.Values == null)
             return BadRequest(new { error = "Values is required." });
-        if (request.Notes?.Length > 1000)
-            return BadRequest(new { error = "Notes must be at most 1000 characters." });
-        if (request.Values.Any(v => v.Value is null || v.Value.Length > 500))
-            return BadRequest(new { error = "Field values must be at most 500 characters." });
+        if (ValidateWorkoutFields(request.Notes, request.Values) is { } error)
+            return BadRequest(new { error });
 
         try
         {
@@ -89,6 +85,15 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
             false => NotFound(),
             null => NotFound(),
         };
+    }
+
+    private static string? ValidateWorkoutFields(string? notes, List<TrainingLog.Services.FieldValueRequest> values)
+    {
+        if (notes?.Length > Limits.NotesMaxLength)
+            return $"Notes must be at most {Limits.NotesMaxLength} characters.";
+        if (values.Any(v => v.Value is null || v.Value.Length > Limits.FieldValueMaxLength))
+            return $"Field values must be at most {Limits.FieldValueMaxLength} characters.";
+        return null;
     }
 }
 
