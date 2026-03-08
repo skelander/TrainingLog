@@ -32,27 +32,7 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
     {
         if (!await db.WorkoutTypes.AnyAsync(t => t.Id == request.WorkoutTypeId, cancellationToken)) return null;
 
-        if (request.Values.Count > 0)
-        {
-            var fieldDefs = (await db.FieldDefinitions
-                .Where(f => f.WorkoutTypeId == request.WorkoutTypeId)
-                .ToListAsync(cancellationToken))
-                .ToDictionary(f => f.Id);
-            if (request.Values.Any(v => !fieldDefs.ContainsKey(v.FieldDefinitionId)))
-                throw new DomainException("One or more field definition IDs do not belong to the specified workout type.");
-            foreach (var v in request.Values)
-            {
-                var def = fieldDefs[v.FieldDefinitionId];
-                var valid = def.Type switch
-                {
-                    FieldType.Number   => decimal.TryParse(v.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out _),
-                    FieldType.Duration => TimeSpan.TryParse(v.Value, out _),
-                    _                  => true,
-                };
-                if (!valid)
-                    throw new DomainException($"Value '{v.Value}' is not valid for field '{def.Name}' (expected {def.Type}).");
-            }
-        }
+        await ValidateFieldValuesAsync(request.WorkoutTypeId, request.Values, cancellationToken);
 
         var session = new WorkoutSession
         {
@@ -78,27 +58,7 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         if (session is null) return null;
         if (!isAdmin && session.UserId != userId) return null;
 
-        if (request.Values.Count > 0)
-        {
-            var fieldDefs = (await db.FieldDefinitions
-                .Where(f => f.WorkoutTypeId == session.WorkoutTypeId)
-                .ToListAsync(cancellationToken))
-                .ToDictionary(f => f.Id);
-            if (request.Values.Any(v => !fieldDefs.ContainsKey(v.FieldDefinitionId)))
-                throw new DomainException("One or more field definition IDs do not belong to the specified workout type.");
-            foreach (var v in request.Values)
-            {
-                var def = fieldDefs[v.FieldDefinitionId];
-                var valid = def.Type switch
-                {
-                    FieldType.Number   => decimal.TryParse(v.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out _),
-                    FieldType.Duration => TimeSpan.TryParse(v.Value, out _),
-                    _                  => true,
-                };
-                if (!valid)
-                    throw new DomainException($"Value '{v.Value}' is not valid for field '{def.Name}' (expected {def.Type}).");
-            }
-        }
+        await ValidateFieldValuesAsync(session.WorkoutTypeId, request.Values, cancellationToken);
 
         db.FieldValues.RemoveRange(session.Values);
         session.LoggedAt = request.LoggedAt;
@@ -119,6 +79,29 @@ public class WorkoutsService(AppDbContext db) : IWorkoutsService
         db.WorkoutSessions.Remove(session);
         await db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private async Task ValidateFieldValuesAsync(int workoutTypeId, List<FieldValueRequest> values, CancellationToken cancellationToken)
+    {
+        if (values.Count == 0) return;
+        var fieldDefs = (await db.FieldDefinitions
+            .Where(f => f.WorkoutTypeId == workoutTypeId)
+            .ToListAsync(cancellationToken))
+            .ToDictionary(f => f.Id);
+        if (values.Any(v => !fieldDefs.ContainsKey(v.FieldDefinitionId)))
+            throw new DomainException("One or more field definition IDs do not belong to the specified workout type.");
+        foreach (var v in values)
+        {
+            var def = fieldDefs[v.FieldDefinitionId];
+            var valid = def.Type switch
+            {
+                FieldType.Number   => decimal.TryParse(v.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out _),
+                FieldType.Duration => TimeSpan.TryParse(v.Value, out _),
+                _                  => true,
+            };
+            if (!valid)
+                throw new DomainException($"Value '{v.Value}' is not valid for field '{def.Name}' (expected {def.Type}).");
+        }
     }
 
     private static WorkoutSessionResponse ToResponse(WorkoutSession s) =>

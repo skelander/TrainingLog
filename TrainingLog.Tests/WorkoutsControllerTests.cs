@@ -359,4 +359,42 @@ public class WorkoutsControllerTests : IClassFixture<TrainingLogFactory>, IAsync
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
+
+    [Fact]
+    public async Task Create_WithNullFieldValue_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var bjj = types!.First(t => t.Name == "BJJ");
+
+        var res = await _client.WithToken(token).PostAsJsonAsync("/workouts", new
+        {
+            WorkoutTypeId = bjj.Id,
+            LoggedAt = DateTimeOffset.UtcNow,
+            Notes = (string?)null,
+            Values = new[] { new { FieldDefinitionId = bjj.Fields.First().Id, Value = (string?)null } }
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_WithNullFieldValue_Returns400()
+    {
+        var token = await Helpers.GetTokenAsync(_client, "alice", "alice");
+        var created = await _client.WithToken(token).PostAsJsonAsync("/workouts", await RunningSessionAsync(_client, token));
+        var session = await created.Content.ReadFromJsonAsync<WorkoutSessionResponse>();
+
+        var types = await _client.WithToken(token).GetFromJsonAsync<List<WorkoutTypeResponse>>("/workout-types");
+        var running = types!.First(t => t.Name == "Running");
+
+        var res = await _client.WithToken(token).PutAsJsonAsync($"/workouts/{session!.Id}", new
+        {
+            LoggedAt = DateTimeOffset.UtcNow,
+            Notes = (string?)null,
+            Values = new[] { new { FieldDefinitionId = running.Fields.FirstOrDefault()?.Id ?? 0, Value = (string?)null } }
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
 }

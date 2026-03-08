@@ -35,7 +35,7 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
             return BadRequest(new { error = "Values is required." });
         if (request.Notes?.Length > 1000)
             return BadRequest(new { error = "Notes must be at most 1000 characters." });
-        if (request.Values.Any(v => v.Value.Length > 500))
+        if (request.Values.Any(v => v.Value is null || v.Value.Length > 500))
             return BadRequest(new { error = "Field values must be at most 500 characters." });
 
         try
@@ -59,7 +59,7 @@ public class WorkoutsController(IWorkoutsService service, ILogger<WorkoutsContro
             return BadRequest(new { error = "Values is required." });
         if (request.Notes?.Length > 1000)
             return BadRequest(new { error = "Notes must be at most 1000 characters." });
-        if (request.Values.Any(v => v.Value.Length > 500))
+        if (request.Values.Any(v => v.Value is null || v.Value.Length > 500))
             return BadRequest(new { error = "Field values must be at most 500 characters." });
 
         try

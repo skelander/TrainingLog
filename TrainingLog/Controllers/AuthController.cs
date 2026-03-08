@@ -1,16 +1,12 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.IdentityModel.Tokens;
 using TrainingLog.Services;
 
 namespace TrainingLog.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class AuthController(IAuthService auth, IConfiguration config, ILogger<AuthController> logger) : ControllerBase
+public class AuthController(IAuthService auth, ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("login")]
     [EnableRateLimiting("login")]
@@ -21,31 +17,14 @@ public class AuthController(IAuthService auth, IConfiguration config, ILogger<Au
         if (request.Password.Length > 72)
             return BadRequest(new { error = "Password must be at most 72 characters." });
 
-        var result = await auth.AuthenticateAsync(request.Username, request.Password, cancellationToken);
+        var result = await auth.LoginAsync(request.Username, request.Password, cancellationToken);
         if (result is null)
         {
             logger.LogWarning("Failed login attempt for user {Username}", request.Username);
             return Unauthorized();
         }
-        var (userId, role) = result.Value;
-        logger.LogInformation("User {Username} logged in with role {Role}", request.Username, role);
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.Name, request.Username),
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Role, role),
-        };
-        var token = new JwtSecurityToken(
-            issuer: config["Jwt:Issuer"],
-            audience: config["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(8),
-            signingCredentials: creds);
-
-        return Ok(new LoginResponse(request.Username, role, new JwtSecurityTokenHandler().WriteToken(token)));
+        logger.LogInformation("User {Username} logged in with role {Role}", request.Username, result.Role);
+        return Ok(new LoginResponse(request.Username, result.Role, result.Token));
     }
 }
 
