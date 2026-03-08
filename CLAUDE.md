@@ -20,6 +20,8 @@ TrainingLog/
                  WorkoutTypeResponse, WorkoutSessionResponse, FieldDefResponse, FieldValueResponse
   Services/      IAuthService, AuthService, IWorkoutTypesService, WorkoutTypesService,
                  IWorkoutsService, WorkoutsService, IUsersService, UsersService, DomainException
+  Limits.cs      Validation constants (PasswordMaxLength, UsernameMaxLength, WorkoutTypeNameMaxLength,
+                 NotesMaxLength, FieldValueMaxLength)
 
 TrainingLog.Tests/
   AuthControllerTests.cs
@@ -35,17 +37,22 @@ TrainingLog.Tests/
 - Services are Scoped (use AppDbContext)
 - JWT key injected at runtime from env var (Fly.io secret in production; appsettings.json fallback for dev)
 
-## Seeded Users
-| Username | Password | Role  |
-|----------|----------|-------|
-| alice    | alice    | user  |
-| bob      | bob      | user  |
-| admin    | admin    | admin |
-| 1        | 1        | user  |
+## Seeded Data
+Users are only seeded in non-production environments (Development/test).
+Workout types are always seeded if none exist.
 
-## Seeded Workout Types
+| Username | Password | Role  | Env          |
+|----------|----------|-------|--------------|
+| alice    | alice    | user  | non-prod only |
+| bob      | bob      | user  | non-prod only |
+| admin    | admin    | admin | non-prod only |
+| 1        | 1        | user  | non-prod only |
+
+Workout types (all envs):
 - Running: Distance (Number, km), Duration (Duration)
 - BJJ: Duration (Duration), Rounds (Number), Notes (Text)
+
+**Production first deploy**: no users are seeded — create the first admin via a migration or direct DB access.
 
 ## Auth
 - `POST /auth/login` → JWT token
