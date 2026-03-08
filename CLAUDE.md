@@ -62,6 +62,16 @@ Workout types (all envs):
 - Users see only their own workouts (GET /workouts); admin can view any session via GET /workouts/{id}
 - Deleting a user cascade-deletes their workout sessions
 
+## Configuration Keys
+| Key | Default | Description |
+|-----|---------|-------------|
+| `Jwt:Key` | *(required)* | HMAC-SHA256 signing key — set via Fly.io secret `Jwt__Key` |
+| `Jwt:Issuer` | `TrainingLog` | JWT issuer |
+| `Jwt:Audience` | `TrainingLog` | JWT audience |
+| `Cors:AllowedOrigins` | `["https://skelander.github.io"]` | Allowed CORS origins |
+| `RateLimit:LoginPermitLimit` | `10` | Max login requests per minute per IP |
+| `BCrypt:WorkFactor` | `11` | BCrypt work factor (tests override to `4`) |
+
 ## Code Style
 - C# primary constructors
 - Nullable enabled

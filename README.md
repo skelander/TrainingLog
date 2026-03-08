@@ -7,7 +7,7 @@ A workout tracker built with ASP.NET Core. Admins define workout types and their
 ## API Endpoints
 
 ### `POST /auth/login`
-Returns a signed JWT token (8-hour expiry).
+Returns a signed JWT token (8-hour expiry). Rate-limited to 10 requests per minute per IP; returns 429 on excess.
 ```json
 { "username": "alice", "password": "alice" }
 → { "user": "alice", "role": "user", "token": "<jwt>" }
@@ -30,7 +30,7 @@ Field types: `0` = Number, `1` = Text, `2` = Duration
 Replaces a workout type's name and fields. Returns 409 if the new name is already taken, or if existing sessions have logged values for this type.
 
 ### `DELETE /workout-types/{id}` *(admin)*
-Deletes a workout type.
+Deletes a workout type. Returns 409 if the type has existing workout sessions.
 
 ### `GET /workouts`
 Returns the calling user's workout sessions, newest first. Requires JWT.
@@ -94,6 +94,8 @@ Public. Returns 200 OK if the service is up.
 ---
 
 ## Test accounts
+
+Available in non-production environments only (not seeded in production).
 
 | Username | Password | Role  |
 |----------|----------|-------|

@@ -1,7 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY TrainingLog/TrainingLog.csproj TrainingLog/
-RUN dotnet restore TrainingLog/TrainingLog.csproj
+COPY TrainingLog/packages.lock.json TrainingLog/
+RUN dotnet restore TrainingLog/TrainingLog.csproj --locked-mode
 COPY TrainingLog/ TrainingLog/
 RUN dotnet publish TrainingLog/TrainingLog.csproj -c Release -o /app
 
