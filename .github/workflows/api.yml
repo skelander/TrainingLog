@@ -11,7 +11,7 @@ on:
       - '.github/workflows/api.yml'
 
 jobs:
-  build-test-deploy:
+  build-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,14 +19,22 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.x'
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: Build
         run: dotnet build TrainingLog.slnx
 
       - name: Test
-        run: dotnet test TrainingLog.Tests/TrainingLog.Tests.csproj --logger "console;verbosity=minimal"
+        run: dotnet test TrainingLog.Tests/TrainingLog.Tests.csproj --no-build --logger "console;verbosity=minimal"
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@1.5
 
       - name: Deploy
         run: flyctl deploy --remote-only
